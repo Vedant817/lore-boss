@@ -23,6 +23,9 @@ test('moderation, edit, rejection, OBS state, reload and privacy purge', async (
   await page.screenshot({ path: join(tmpdir(), 'loreboss-queue.png'), fullPage: true });
   await page.getByRole('link', { name: 'Setup', exact: true }).click(); await page.getByLabel('Boss max HP').fill('120'); await page.getByRole('button', { name: 'Spawn boss', exact: true }).click();
   await expect(page.locator('#boss-body')).toContainText('120 / 120 HP');
+  await expect(page.locator('#banner')).toContainText('Boss spawned.');
+  await page.getByLabel('Boss max HP').fill('120');
+  await expect(page.getByRole('button', { name: 'Spawn boss', exact: true })).toBeDisabled();
   const overlay = await context.newPage(); await overlay.goto('/overlay-view');
   await expect(overlay.locator('#badge-replay')).toBeVisible(); await expect(overlay.locator('#ov-hp-caption')).toHaveText('120 / 120 HP');
   const style = await overlay.locator('body').evaluate(element => ({ background: getComputedStyle(element).backgroundColor, primary: getComputedStyle(element).getPropertyValue('--lb-primary').trim() }));

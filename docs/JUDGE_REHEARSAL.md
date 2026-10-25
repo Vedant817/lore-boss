@@ -21,8 +21,11 @@ Actual OBS 32.2.1/obs-websocket 5.7.4 rendered the live rehearsal's defeated sta
 - **Setup order:** LLM settings previously returned 409 after Twitch connected. Inference-only changes now preserve the live session; changed Twitch credentials still require disconnect. Provider changes cancel stale extraction without dropping buffered chat.
 - **Duplicate rankings:** list text included a number in addition to the ordered-list marker. Rankings now render once, with consistent tie ordering.
 - **Defeat reload:** fight duration was only in the transient defeat event. It now travels in the defeated state snapshot, preserving the summary on reload.
+- **Spawn feedback:** the success message now says the boss spawned; active fights disable another spawn and explain why.
 
 Root gates: typecheck, lint, build and guardrails passed; **105 tests in 10 files passed; 4 browser tests passed**. Independent OpenCode GLM review was attempted but failed at the provider's free-usage limit; no independent PASS is claimed.
+
+Hosted CI for the four core fixes passed on Linux/Windows and Node 22/24: [run 40200433969](https://github.com/Vedant817/lore-boss/actions/runs/40200433969). The final spawn-feedback refinement also passed the full local gates; its hosted result is recorded separately in CODEX_LOG.md.
 
 ## Presenting to judges
 

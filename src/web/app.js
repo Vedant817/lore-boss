@@ -260,9 +260,10 @@
       }
     }
     const approved = state.lore.filter((l) => l.status === 'approved').length;
-    const canSpawn = approved > 0 && !state.busy;
+    const fighting = boss && ['spawning', 'fight'].includes(boss.phase);
+    const canSpawn = approved > 0 && !state.busy && !fighting;
     $('spawn-form').querySelector('button').disabled = !canSpawn || !(+$('spawn-hp').value >= 1);
-    $('spawn-hint').textContent = approved > 0
+    $('spawn-hint').textContent = fighting ? 'Finish the current fight before spawning another boss.' : approved > 0
       ? `${approved} approved lore item(s) power attacks.`
       : 'Spawning is enabled once at least one lore item is approved.';
   }
@@ -288,7 +289,7 @@
     try {
       await api('/api/boss/spawn', { method: 'POST', body: { maxHp } });
       $('spawn-hp').value = '';
-      note('Spawning boss.', 'success');
+      note('Boss spawned. Chat can attack or heal.', 'success');
       await loadStatus();
     } catch (err) {
       fail(err, 'Spawn failed');
