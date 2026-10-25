@@ -8,6 +8,8 @@ The public repository is https://github.com/Vedant817/lore-boss. Initial verifie
 - Readiness/evidence controls implemented via opencode DeepSeek; independent opencode GLM review PASS. Saved config is distinct from an actual valid inference probe; pending evidence remains moderator-only and session-scoped.
 - OBS 32.2.1 portable instance, websocket 5.7.4: actual active browser-source screenshots captured and inspected. The live-source waiting view was rendered from localhost:3137; a separate synthetic replay fight was rendered from localhost:3155 using actual moderation/spawn routes. No Twitch connection or stream is inferred. Special audio inputs muted; no streaming/recording enabled. Private websocket configuration and screenshots live only under OS temp.
 - Devpost MCP was configured and its CLI OAuth login completed. The existing T3 connector originally returned reauthentication required; its workflow remains paused until a refreshed session can fetch official requirements and rule/eligibility agreement. No rules acknowledgment, registration, or submission is claimed.
+- Labeled synthetic preview generated and visually inspected: OS temp `LoreBoss-preview-2026-10-25T09-34-34-960Z/preview.mp4`, 74.880 seconds. Actual queue actions, reducer combat, raid template and defeat render through the app; no real Twitch or inference call was made. The final second-heal frame shows +5 HP. Independent opencode preview review PASS.
+- Local gates: 101 tests in 9 files, 3 browser tests, typecheck, lint, build and guardrails passed. Independent fixture-isolation review PASS. Implementation published as commit 7195dd3; CI run 40181311553 is tracked separately.
 
 ## Still requires live owner participation
 
