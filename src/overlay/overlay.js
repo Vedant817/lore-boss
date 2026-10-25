@@ -24,8 +24,10 @@
     mvpList: $('ov-mvp-list'),
     recap: $('ov-recap'),
     recapPill: $('ov-recap-pill'),
+    recapHeadline: $('ov-recap-headline'),
     recapLines: $('ov-recap-lines'),
     recapLabel: $('ov-recap-label'),
+    recapHint: $('ov-recap-hint'),
     hitpop: $('ov-hitpop'),
     ticker: $('ov-ticker'),
     conn: $('ov-conn'),
@@ -34,6 +36,7 @@
   let popHideTimer = 0;
   let recapTimer = 0;
   let lastState = null;
+  let channel = null;
 
   const el = (tag, attrs = {}, ...kids) => {
     const node = document.createElement(tag);
@@ -146,6 +149,8 @@
     const raider = str(recap.raider) || 'A raider';
     const viewers = num(recap.viewers);
     els.recapPill.textContent = `Raid incoming · ${raider}${viewers !== null ? ` + ${viewers} viewers` : ''}`;
+    const name = str(recap.channel) || channel;
+    els.recapHeadline.textContent = name ? `Previously on ${name}…` : 'Previously on…';
     els.recapLines.replaceChildren(
       ...(Array.isArray(recap.lines) ? recap.lines.slice(0, 3).map((line, i) =>
         el('li', { class: 'ov-recap-line reveal', text: `${i + 1}. ${str(line) || ''}` })) : []),
@@ -156,6 +161,11 @@
     els.recapLabel.textContent = recap.generatedBy === 'template'
       ? 'Scripted recap — template assembled from approved lore only.'
       : 'AI recap, written from approved lore only.';
+    // The raider hint must be honest: never invite an attack while there is no boss fight.
+    const fighting = lastState?.phase === 'fight';
+    els.recapHint.textContent = fighting
+      ? 'Raiders: type !attack to join the fight →'
+      : 'Raiders: welcome! A fight starts once the streamer approves lore — hang tight.';
     showView('recap');
     triggerStagger();
     clearTimeout(recapTimer);
@@ -188,6 +198,7 @@
     switch (msg.type) {
       case 'hello': {
         els.badge.hidden = msg.source !== 'replay';
+        channel = str(msg.channel);
         send({ type: 'ack' });
         break;
       }

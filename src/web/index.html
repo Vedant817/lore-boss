@@ -41,6 +41,7 @@
         <section class="card" aria-labelledby="conn-h">
           <div class="card-head">
             <h2 id="conn-h">Connection</h2>
+            <p id="freshness" class="caption" style="margin: 0;"></p>
             <button class="btn btn-quiet" type="button" id="refresh">Refresh status</button>
           </div>
           <dl id="health-rows" class="kv"></dl>
@@ -52,7 +53,7 @@
           <form id="spawn-form" class="form-actions">
             <div class="field">
               <label for="spawn-hp">Boss max HP</label>
-              <input class="input" id="spawn-hp" type="number" min="1" step="1" inputmode="numeric" style="width: 160px;" />
+              <input class="input" id="spawn-hp" type="number" min="1" max="1000000" step="1" inputmode="numeric" style="width: 160px;" />
             </div>
             <button class="btn btn-primary" type="submit">Spawn boss</button>
           </form>
@@ -121,9 +122,10 @@
         </section>
       </section>
 
-      <!-- Queue view (also rendered at /queue) -->
+      <!-- Queue view (also rendered at /queue); heading resolves the section's aria-labelledby. -->
       <section id="view-queue" class="stack" aria-labelledby="queue-h" hidden>
         <section class="card">
+          <div class="card-head"><h2 id="queue-h">Lore Queue</h2></div>
           <p class="caption" style="font-size: 18px;">Nothing goes on stream until a mod approves it.</p>
           <div class="tabs" id="tabs" role="group" aria-label="Lore status"></div>
           <div id="queue-list" class="stack" style="gap: 16px;"></div>

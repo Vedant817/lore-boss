@@ -14,4 +14,28 @@ it('returns pending lore only to operator and never publishes it', async () => {
 it('approving publishes approved lore and rejects repeat reviews', async () => { const { app, runtime } = await setup(); runtime.store.startSession('s', 'live', 'c'); runtime.sessionId = 's'; const item = runtime.store.addCandidate('s', { kind: 'moment', text: 'Community moment', authorUserId: null, evidenceMessageIds: ['m1', 'm2'] }); const messages: unknown[] = []; runtime.broadcast = message => messages.push(message); const res = await app.inject({ method: 'POST', url: `/api/lore/${item.id}/review`, headers, payload: { status: 'approved' } }); expect(res.statusCode).toBe(200); expect(JSON.stringify(messages)).toContain('Community moment'); expect((await app.inject({ method: 'POST', url: `/api/lore/${item.id}/review`, headers, payload: { status: 'approved' } })).statusCode).toBe(409); });
 it('spawn rejects invalid HP and absence of approved lore', async () => { const { app } = await setup(); expect((await app.inject({ method: 'POST', url: '/api/boss/spawn', headers, payload: { maxHp: -1 } })).statusCode).toBe(400); expect((await app.inject({ method: 'POST', url: '/api/boss/spawn', headers, payload: { maxHp: 100 } })).statusCode).toBe(409); });
 it('OAuth start requires an unlocked operator browser', async () => { const { app } = await setup(); expect((await app.inject({ url: '/auth/start', headers })).statusCode).toBe(401); });
+// REVIEW-02 F8: the unauthorized start must not dump raw JSON on a browser; it serves a
+// static, CSP-compatible recovery page with a same-origin setup link and no secrets.
+it('OAuth start without the browser cookie returns HTML recovery, never raw JSON', async () => {
+  const { app } = await setup();
+  const res = await app.inject({ url: '/auth/start', headers: { host: 'localhost:3000' } });
+  expect(res.statusCode).toBe(401);
+  expect(res.headers['content-type']).toContain('text/html');
+  expect(res.headers['content-security-policy']).toContain("script-src 'self'");
+  expect(res.body).toContain('href="/"'); // same-origin path back to setup
+  expect(res.body).not.toContain('Unlock the setup page with your moderator token first'); // old raw-JSON error body
+  expect(res.body).not.toContain(config().MOD_TOKEN);
+  expect(res.body).not.toContain('<script');
+});
+it('OAuth start still rejects hostile Host and cross-origin before any recovery body', async () => {
+  const { app } = await setup();
+  expect((await app.inject({ url: '/auth/start', headers: { host: 'attacker.test' } })).statusCode).toBe(403);
+  expect((await app.inject({ url: '/auth/start', headers: { host: 'localhost:3000', origin: 'https://attacker.test' } })).statusCode).toBe(403);
+});
+it('OAuth start refuses replay even with a valid cookie and exchanges nothing', async () => {
+  const { app, runtime } = await setup();
+  const res = await app.inject({ url: '/auth/start', headers: { ...headers, cookie: `lb_mod=${config().MOD_TOKEN}` } });
+  expect(res.statusCode).toBe(409);
+  expect(runtime.auth.identity).toBeNull(); // no authorization, no provider exchange
+});
 it('settings reject unsupported provider before writing secrets', async () => { const { app } = await setup(); const res = await app.inject({ method: 'POST', url: '/api/settings', headers, payload: { baseUrl: 'https://attacker.test/v1' } }); expect(res.statusCode).toBe(409); });

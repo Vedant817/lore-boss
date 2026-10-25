@@ -156,7 +156,7 @@ describe('readiness and inference probe', () => {
     runtime.llm = new LlmClient('http://127.0.0.1:9/v1', 'local-model', '', networkDown);
     const failed = await app.inject({ method: 'POST', url: '/api/llm/check', headers, payload: {} });
     expect(failed.statusCode).toBe(409);
-    expect(failed.json().error).toMatch(/timed out or returned invalid JSON/i);
+    expect(failed.json().error).toMatch(/network request failed/i);
     expect((await app.inject({ url: '/api/readiness', headers })).json().inference).toMatchObject({ verified: false });
   });
 

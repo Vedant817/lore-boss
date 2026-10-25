@@ -44,6 +44,8 @@ export class Runtime {
     this.lore = new LoreService(this.store, () => this.llm, () => this.sessionId, cfg.LB_BLOCKED_WORDS.split(',').map(s => s.trim()).filter(Boolean));
   }
   health() { return { source: this.cfg.LB_SOURCE, auth: { connected: Boolean(this.auth.identity), login: this.auth.identity?.login ?? null, scopes: this.auth.identity?.scopes ?? [] }, eventsub: this.eventsub.status, llmConfigured: this.llm.configured, sessionId: this.sessionId, error: this.error ?? this.lore.error }; }
+  // Optional real channel context for hello/recap; null in replay or before connection, never a numeric id or invented name.
+  get channelLogin(): string | null { return this.auth.identity?.login ?? null; }
   resetInferenceCheck(): void { this.inferenceGeneration++; this.llmCheck = null; }
   async checkInference(): Promise<InferenceStatus> {
     if (this.checking) throw new Error('Inference check already running');
@@ -140,12 +142,31 @@ export class Runtime {
     if (!this.sessionId) throw new Error('Start a live or explicitly selected replay session first');
     const next = reduce(this.boss, { type: 'spawn', id: randomUUID(), maxHp, lore: this.approved(), ts: new Date().toISOString() });
     if (next === this.boss) throw new Error('Approve lore first and finish any current fight');
-    this.boss = reduce(next, { type: 'start' }); this.store.saveBoss(this.sessionId, this.boss); this.publishState(); this.attack(); return this.boss;
+    this.boss = reduce(next, { type: 'start' });
+    this.boss = { ...this.boss, attackPool: this.attributed(this.boss.attackPool) };
+    this.store.saveBoss(this.sessionId, this.boss); this.publishState(); this.attack(); return this.boss;
   }
-  attack(): void { if (this.boss.phase !== 'fight') return; const attack = this.boss.attackPool[this.attackIndex++ % this.boss.attackPool.length]; if (attack) this.send('boss.attack', attack); }
+  // Credits an author only from genuine same-session evidence cited by the approved item; the pure
+  // reducer never invents one, and a re-resolved attack loses its name if that support is gone.
+  private attributed(pool: BossState['attackPool']): BossState['attackPool'] {
+    const sessionId = this.sessionId; if (!sessionId) return pool;
+    const quotes = new Map(this.approved().filter(item => item.kind === 'quote' && item.authorUserId).map(item => [item.id, item]));
+    return pool.map(attack => {
+      const item = quotes.get(attack.loreId);
+      const author = item?.authorUserId ? this.store.quoteAuthor(sessionId, item.authorUserId, item.text, item.evidenceMessageIds) : null;
+      if (author) return { ...attack, author };
+      if (attack.author === undefined) return attack;
+      return { loreId: attack.loreId, text: attack.text };
+    });
+  }
+  attack(): void {
+    if (this.boss.phase !== 'fight') return;
+    this.boss = { ...this.boss, attackPool: this.attributed(this.boss.attackPool) };
+    const attack = this.boss.attackPool[this.attackIndex++ % this.boss.attackPool.length]; if (attack) this.send('boss.attack', attack);
+  }
   private recap(event: Extract<LBEvent, { kind: 'raid' }>): void {
-    const lines = this.approved().slice(0, 3).map(item => item.text); if (!lines.length) return;
-    this.send('recap.show', { raider: event.fromName, viewers: event.viewers, lines, generatedBy: 'template', durationMs: 12_000 });
+    const lines = this.approved().slice(0, 3).map(item => item.text);
+    this.send('recap.show', { raider: event.fromName, viewers: event.viewers, lines, generatedBy: 'template', durationMs: 12_000, channel: this.auth.identity?.login ?? null });
   }
   publishState(): void { this.send('boss.state', { state: this.boss }); this.send('lore.ticker', { items: this.approved().map(({ id, text }) => ({ id, text })) }); }
   private send(type: string, fields: Record<string, unknown>): void { this.broadcast({ v: 1, type, ...fields }); }

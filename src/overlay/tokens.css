@@ -97,7 +97,9 @@ a { color: var(--lb-primary-hi); }
 }
 .chip-gold { background: var(--lb-gold); }
 .chip-success { background: var(--lb-success); }
-.chip-danger { background: var(--lb-danger); color: var(--lb-text); }
+/* Danger surfaces: --lb-bg foreground on the unchanged --lb-danger background.
+   Deliberate foreground-only WCAG correction (≈6.1:1, AA) — recorded in DESIGN.md. */
+.chip-danger { background: var(--lb-danger); color: var(--lb-bg); }
 
 /* Buttons (weight/size reuse the type scale: body size, H2 weight) */
 .btn {
@@ -117,7 +119,7 @@ a { color: var(--lb-primary-hi); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
 
 .btn-success { background: var(--lb-success); color: var(--lb-bg); }
-.btn-danger { background: var(--lb-danger); color: var(--lb-text); }
+.btn-danger { background: var(--lb-danger); color: var(--lb-bg); }
 .btn-primary { background: var(--lb-primary); color: var(--lb-text); }
 .btn-quiet { background: transparent; color: var(--lb-muted); }
 
@@ -227,7 +229,7 @@ a { color: var(--lb-primary-hi); }
 }
 .banner:empty { display: none; }
 .banner-success { background: var(--lb-success); color: var(--lb-bg); }
-.banner-danger { background: var(--lb-danger); color: var(--lb-text); }
+.banner-danger { background: var(--lb-danger); color: var(--lb-bg); }
 .banner-info { background: var(--lb-surface2); color: var(--lb-text); }
 
 .qcard {
@@ -286,7 +288,7 @@ a { color: var(--lb-primary-hi); }
   transform: translateX(-50%);
   z-index: 50;
   background: var(--lb-danger);
-  color: var(--lb-text);
+  color: var(--lb-bg);
   font: var(--lb-caption-13);
   font-weight: 500;
   text-transform: uppercase;
@@ -365,19 +367,8 @@ a { color: var(--lb-primary-hi); }
 .ov-quote .q-text { font: var(--lb-h2-28); overflow-wrap: anywhere; }
 .ov-quote .q-src { margin-top: var(--lb-sp-2); }
 
-.ov-portrait {
-  position: absolute;
-  top: var(--lb-safe);
-  right: var(--lb-safe);
-  width: clamp(200px, 18vw, 340px);
-  aspect-ratio: 1 / 1.24;
-  border: 2px solid var(--lb-primary);
-  border-radius: var(--lb-r-16);
-  display: grid;
-  place-items: start center;
-  padding: var(--lb-sp-4);
-}
-.ov-portrait .caption { text-align: center; }
+/* Portrait slot deferred (no art source): its dead rules were removed;
+   see the deviations section in DESIGN.md. */
 
 .ov-pop {
   position: absolute;

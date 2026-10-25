@@ -14,7 +14,7 @@
 | 04 Overlay — Boss Defeated | `CRUubY7Xx` | 1920×1080 |
 | 05 Web — Mod Approval Queue | `VBsu6Z56A` | 1440×900 |
 | 06 Web — Streamer Setup & Settings | `WdD73qX4n` | 1440×900 |
-Key children: HP bar `msLrrQqD8` (fill `RkW50icOF`), MVP list `jZsfzTMjd`, quote bubble `BtVVpI0Ot`, portrait slot `INupX2YGB`.
+Key children: HP bar `msLrrQqD8` (fill `RkW50icOF`), MVP list `jZsfzTMjd`, quote bubble `BtVVpI0Ot`, portrait slot `INupX2YGB` (deferred — see deviations).
 
 All copy in frames is `{placeholder}` — real values come from state. **Never ship placeholder or sample names in the product.** In the real overlay the 1920×1080 background is transparent (the frames use dark fill only for preview).
 
@@ -37,3 +37,7 @@ Type: Inter — Display 72/800, H1 40/700, H2 28/600, Body 18/400, Caption 13/50
 - **Framer:** Framer's MCP (`open_project` → `exec` with `api.tree.serialize(nodeId,{depth:3})` and `api.tree.screenshot(nodeId)`) returns structure + images. Add the Framer MCP to Codex (`codex mcp add …` per Framer's docs) or read the screenshots in `designs/screenshots/`.
 - **Figma (if you populate the file):** Figma MCP tools `get_metadata` (frame list) and `get_design_context` / `get_screenshot` on a node ID. Add to Codex with its MCP config (`~/.codex/config.toml` `[mcp_servers.figma]`). Verify tool names in Figma's current MCP docs before relying on them.
 - Agents implement **from tokens + structure**, not pixel-copying; keep tokens in `src/overlay/tokens.css`.
+
+## Deliberate implementation deviations (recorded)
+- **Danger-surface foreground (accessibility correction, ITERATION-04):** `.chip-danger`, `.btn-danger`, `.banner-danger` and `.badge-replay` render `--lb-bg` (#0E0B16) text on the unchanged `--lb-danger` (#FF4F6D) background — computed contrast ≈6.1:1 (WCAG AA for normal text) instead of the frames' light-on-danger ≈2.8:1. This is a foreground-only deviation from the frames: every palette hex, size, frame and motion value is unchanged. The user's explicit design-fix authorization covers this token-internal correction; it is asserted by computed-style tests in `tests/browser/presentation.spec.ts`.
+- **Portrait slot (frame 01 child `INupX2YGB`) is deferred, not implemented:** no art source exists, so the dead `.ov-portrait` CSS was removed and no placeholder art or image URL ships. Revisit post-hackathon with a real operator-supplied asset.

@@ -11,6 +11,25 @@ afterEach(() => dirs.splice(0).forEach(dir => rmSync(dir, { recursive: true, for
 it('replay forces provenance even for recorded live input', () => expect(readReplay(file([chat()]))[0]!.event.source).toBe('replay'));
 it('rejects malformed replay before emitting partial sessions', () => expect(() => readReplay(file([chat(), { kind: 'invalid' }]))).toThrow());
 it('rejects unordered offsets', () => expect(() => readReplay(file([{ ...chat(), t_ms: 10 }, { ...chat({ id: 'm2' }), t_ms: 0 }]))).toThrow('order'));
+it('fails closed on a replay event with no ISO ts instead of inventing a date', () => {
+  const withoutTs = chat(); delete (withoutTs as { ts?: string }).ts;
+  expect(() => readReplay(file([withoutTs]))).toThrow(/line 1/);
+  expect(() => readReplay(file([withoutTs]))).toThrow(/ts/);
+  expect(() => readReplay(file([withoutTs]))).toThrow(/t_ms/);
+});
+it('requires ts on every event, not just the first', () => {
+  const withoutTs = chat({ id: 'm2' }); delete (withoutTs as { ts?: string }).ts;
+  expect(() => readReplay(file([chat(), withoutTs]))).toThrow(/line 2/);
+});
+it('preserves explicitly supplied timestamps and offsets exactly', () => {
+  const entries = readReplay(file([{ ...chat(), t_ms: 1500 }, { ...chat({ id: 'm2' }), t_ms: 1500 }]));
+  expect(entries.map(entry => entry.offset)).toEqual([1500, 1500]);
+  expect(entries[0]!.event.ts).toBe('2026-10-25T00:00:00.000Z');
+  expect(entries[0]!.event.ts).not.toMatch(/^1970/);
+});
+it('rejects an invalid replay timestamp instead of substituting one', () => {
+  expect(() => readReplay(file([{ ...chat(), ts: 'not-a-date' }]))).toThrow(/line 1/);
+});
 it('parses commands without fabricating users', () => expect(commandFromChat(chat({ text: '!attack' }))).toMatchObject({ kind: 'command', command: '!attack', userId: 'user-1' }));
 it('ordinary text is not a command', () => expect(commandFromChat(chat())).toBeNull());
 it('runtime defaults to live and cannot consume replay', () => { const runtime = new Runtime(config()); expect(runtime.cfg.LB_SOURCE).toBe('live'); runtime.accept(chat({ source: 'replay' })); expect(runtime.boss.phase).toBe('idle'); runtime.close(); });

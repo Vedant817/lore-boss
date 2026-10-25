@@ -14,17 +14,26 @@ export function commandFromChat(event: LBEvent): LBEvent | null {
   if (cmd !== '!attack' && cmd !== '!heal' && cmd !== '!lore') return null;
   return { id: `${event.id}:command`, ts: event.ts, source: event.source, channelId: event.channelId, kind: 'command', userId: event.userId, userName: event.userName, command: cmd, args };
 }
+// Missing per-event ts fails closed: t_ms is only a scheduling offset from the recording start,
+// never a wall-clock date, so this loader refuses to synthesize one (no epoch 0, no "now").
+function isoTimestampAtLine(input: Record<string, unknown>, line: number): string {
+  if (input.ts === undefined || input.ts === null) throw new Error(`Replay event at line ${line} is missing ts; t_ms is only a scheduling offset, so add the real ISO 8601 timestamp for this event`);
+  const stamp = z.iso.datetime().safeParse(input.ts);
+  if (!stamp.success) throw new Error(`Replay event at line ${line} has an invalid ts; use an ISO 8601 timestamp such as 2026-10-25T00:00:00.000Z`);
+  return stamp.data;
+}
 export function readReplay(path: string): { offset: number; event: LBEvent }[] {
   let previous = 0;
   const seen = new Set<string>();
   const entries = readFileSync(path, 'utf8').split(/\r?\n/).filter(line => line.trim()).map((line, index) => {
-    const raw: unknown = JSON.parse(line);
-    const input = z.record(z.string(), z.unknown()).parse(raw);
+    const lineNumber = index + 1;
+    const input = z.record(z.string(), z.unknown()).parse(JSON.parse(line));
+    const ts = isoTimestampAtLine(input, lineNumber);
     const offset = input.t_ms === undefined ? index * 1000 : z.number().int().nonnegative().max(86_400_000).parse(input.t_ms);
-    if (offset < previous) throw new Error(`Replay offsets out of order at line ${index + 1}`);
+    if (offset < previous) throw new Error(`Replay offsets out of order at line ${lineNumber}`);
     previous = offset;
-    const event = eventSchema.parse({ ...input, id: input.id ?? `replay:${index}`, ts: input.ts ?? new Date(offset).toISOString(), channelId: input.channelId ?? 'replay', source: 'replay' });
-    if (seen.has(event.id)) throw new Error(`Duplicate replay event at line ${index + 1}`);
+    const event = eventSchema.parse({ ...input, id: input.id ?? `replay:${index}`, ts, channelId: input.channelId ?? 'replay', source: 'replay' });
+    if (seen.has(event.id)) throw new Error(`Duplicate replay event at line ${lineNumber}`);
     seen.add(event.id); return { offset, event };
   });
   if (!entries.length) throw new Error('Replay is empty');

@@ -27,6 +27,21 @@ app.post('/api/test-command', request => {
   runtime.accept({ id: randomUUID(), ts: new Date().toISOString(), source: 'replay', channelId: 'test-channel', kind: 'command', userId: body.user, userName: body.user, command: body.command, args: [] });
   return runtime.boss;
 });
+// ITERATION-03 fixture controls: real stored evidence for attributed quotes, and a real raid event.
+app.post('/api/test-quote', request => {
+  const body = z.object({ text: z.string().min(1).max(140), user: z.string().min(1), name: z.string().min(1) }).strict().parse(request.body);
+  const sessionId = runtime.sessionId; if (!sessionId) throw new Error('No active session');
+  const evidenceIds = [randomUUID(), randomUUID()];
+  runtime.store.saveChat(sessionId, { id: evidenceIds[0]!, ts: new Date().toISOString(), source: 'replay', channelId: 'test-channel', kind: 'chat', userId: body.user, userLogin: 'fixture', userName: body.name, text: body.text, badges: [] });
+  runtime.store.saveChat(sessionId, { id: evidenceIds[1]!, ts: new Date().toISOString(), source: 'replay', channelId: 'test-channel', kind: 'chat', userId: body.user, userLogin: 'fixture', userName: body.name, text: `context for ${body.text}`, badges: [] });
+  const item = runtime.store.addCandidate(sessionId, { kind: 'quote', text: body.text, authorUserId: body.user, evidenceMessageIds: evidenceIds });
+  return runtime.store.review(item.id, 'approved', 'fixture-moderator');
+});
+app.post('/api/test-raid', request => {
+  const body = z.object({ raider: z.string().min(1), viewers: z.number().int().nonnegative() }).strict().parse(request.body);
+  runtime.accept({ id: randomUUID(), ts: new Date().toISOString(), source: 'replay', channelId: 'test-channel', kind: 'raid', fromId: 'fixture-from', fromLogin: 'fixture-raider', fromName: body.raider, viewers: body.viewers });
+  return { ok: true };
+});
 app.get('/test-fixture', (_request, reply) => reply.header('Referrer-Policy', 'same-origin').type('text/html').send('<!doctype html><html lang="en"><title>Lore Boss test fixture</title><h1>Synthetic REPLAY fixture</h1><p>This server uses isolated in-memory data. It never connects to Twitch or a live LLM.</p><form method="post" action="/test-fixture/reset"><button>Reset test data</button></form></html>'));
 app.post('/test-fixture/reset', async (_request, reply) => { await seed(); return reply.header('Referrer-Policy', 'same-origin').code(303).redirect('/'); });
 app.addHook('onClose', async () => { unlinkSync(replayFile); rmdirSync(fixtureDir); });

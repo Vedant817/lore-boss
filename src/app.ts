@@ -88,8 +88,15 @@ export async function createApp(runtime: Runtime) {
     runtime.resetInferenceCheck();
     return { ok: true };
   });
+  // Static, CSP-compatible recovery page for a browser whose lb_mod cookie expired or is
+  // missing (REVIEW-02 F8). Keeps the 401 status (existing unit contract); no tokens, no
+  // new secret-bearing URL, no inline script, no untrusted return URL, no provider request.
+  const authEntryRecovery = (() => {
+    const css = readFileSync(resolve('src/overlay/tokens.css'), 'utf8'); // design tokens only
+    return `<!doctype html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Lore Boss — Connect Twitch</title><style>${css}</style></head><body><main class="wrap"><section class="card"><h1 style="font: var(--lb-h1-40);">Connect Twitch</h1><p>Your moderator unlock expired or is missing, so Twitch authorization was not started. Nothing was sent to Twitch.</p><p class="caption">Unlock the setup page with the moderator token from your local .env file, then choose “Connect Twitch” again.</p><p><a class="btn btn-primary" href="/">Back to setup</a></p></section></main></body></html>`;
+  })();
   app.get('/auth/start', (_request, reply) => {
-    if (!equal(cookie(_request.headers.cookie, 'lb_mod'), runtime.cfg.MOD_TOKEN)) return reply.code(401).send({ error: 'Unlock the setup page with your moderator token first' });
+    if (!equal(cookie(_request.headers.cookie, 'lb_mod'), runtime.cfg.MOD_TOKEN)) return reply.code(401).type('text/html').send(authEntryRecovery);
     if (runtime.cfg.LB_SOURCE !== 'live') throw new Error('Twitch authorization disabled during replay');
     const start = runtime.auth.begin();
     reply.header('Set-Cookie', `lb_oauth=${start.browser}; HttpOnly; SameSite=Lax; Path=/auth/callback; Max-Age=600`);
@@ -111,7 +118,7 @@ export async function createApp(runtime: Runtime) {
   });
   hub.on('connection', ws => {
     ws.on('error', () => ws.terminate());
-    ws.send(JSON.stringify({ v: 1, type: 'hello', source: runtime.cfg.LB_SOURCE, build }));
+    ws.send(JSON.stringify({ v: 1, type: 'hello', source: runtime.cfg.LB_SOURCE, build, channel: runtime.channelLogin }));
     ws.send(JSON.stringify({ v: 1, type: 'boss.state', state: runtime.boss }));
     ws.send(JSON.stringify({ v: 1, type: 'lore.ticker', items: runtime.approved().map(({ id, text }) => ({ id, text })) }));
     ws.on('message', raw => { if (raw.toString() !== '{"type":"ack"}') ws.close(1008, 'Only ack is accepted'); });

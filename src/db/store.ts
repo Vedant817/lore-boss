@@ -215,6 +215,29 @@ export class Store {
     });
   }
 
+  // Resolves the actual stored display name for an approved quote's author using ONLY the item's
+  // cited evidence ids. The lookup is a bounded, parameterized query over those ids, so later
+  // legitimate cited rows are found and uncited rows can never credit a name. Returns null unless a
+  // cited row in the active session matches both the author id and the verbatim quote text.
+  quoteAuthor(sessionId: string, authorUserId: string, quoteText: string, evidenceMessageIds: string[]): string | null {
+    requireText(sessionId, 'session id');
+    requireText(authorUserId, 'author user id');
+    if (quoteText === '') return null;
+    const unique = [...new Set(evidenceMessageIds)];
+    if (unique.length === 0) return null;
+    if (unique.length > 200) fail('quote attribution accepts at most 200 evidence ids');
+    for (const id of unique) requireText(id, 'evidence message id');
+    const placeholders = unique.map(() => '?').join(',');
+    const row = this.db
+      .prepare(
+        `SELECT user_name FROM chat_messages
+         WHERE session_id = ? AND user_id = ? AND id IN (${placeholders}) AND instr(text, ?) > 0
+         LIMIT 1`,
+      )
+      .get(sessionId, authorUserId, ...unique, quoteText);
+    return row === undefined ? null : text(asRow(row)['user_name'], 'user_name');
+  }
+
   addCandidate(sessionId: string, candidate: Candidate): LoreItem {
     const loreText = requireLoreText(candidate.text, 'candidate text');
     const kind = parseKind(candidate.kind);

@@ -6,6 +6,7 @@
   'use strict';
 
   const TOKEN_KEY = 'loreboss.modToken';
+  const POLL_INTERVAL_MS = 10000; // modest auto-refresh cadence; never more than one cycle in flight
   const state = {
     health: null,
     readiness: null,
@@ -14,7 +15,17 @@
     tab: 'pending',
     purgeTimer: 0,
     busy: false,
+    connectBusy: false,
   };
+  // Auto-refresh bookkeeping. renderEpoch invalidates in-flight loads: every mutation,
+  // edit draft or evidence expansion bumps it so a slower poll can never overwrite
+  // newer state or re-render away what a reviewer is looking at.
+  let pollTimer = 0;
+  let pollInFlight = false;
+  let lastPollStart = 0;
+  let lastSyncMs = 0;
+  let renderEpoch = 0;
+  const bumpEpoch = () => { renderEpoch += 1; };
 
   // ——— DOM helper: every dynamic value goes through textContent/createTextNode (no innerHTML). ———
   const el = (tag, attrs = {}, ...kids) => {
@@ -67,6 +78,10 @@
         : `Request failed (HTTP ${res.status}).`;
       throw apiError(msg, res.status);
     }
+    if (parsed === null) {
+      // A 200 with an empty or non-JSON body is malformed, never a fresh empty payload.
+      throw apiError(`Server response was not valid JSON (HTTP ${res.status}).`, res.status);
+    }
     return parsed;
   }
   const apiError = (message, status) => {
@@ -93,6 +108,54 @@
     note(`${prefix}: ${err.message}`, 'danger');
   };
 
+  // ——— Operator auto-refresh: a visible, unlocked page reloads health/status/readiness
+  // every ~10s with one cycle in flight. No polling while hidden, locked, a mutation is
+  // active, purge confirmation is armed, or an edit draft / expanded evidence panel would
+  // be re-rendered away. Success never fakes freshness: lastSyncMs advances only when a
+  // status load succeeds, and failures keep the previous data plus the danger banner. ———
+  const appUnlocked = () => !$('app').hidden;
+  const queueInteractionActive = () => {
+    const list = $('queue-list');
+    return Boolean(list.querySelector('textarea') || list.querySelector('.evidence:not([hidden])'));
+  };
+  const pollAllowed = () => document.visibilityState === 'visible' && appUnlocked()
+    && !state.busy && !state.purgeTimer && !pollInFlight && !queueInteractionActive();
+  function renderFreshness() {
+    if (!lastSyncMs) return;
+    const seconds = Math.max(0, Math.round((Date.now() - lastSyncMs) / 1000));
+    $('freshness').textContent = seconds < 5 ? 'Updated just now'
+      : seconds < 60 ? `Updated ${seconds}s ago` : `Updated ${Math.floor(seconds / 60)}m ago`;
+  }
+  async function startPoll() {
+    lastPollStart = Date.now();
+    pollInFlight = true;
+    try {
+      await loadAll();
+    } finally {
+      pollInFlight = false;
+    }
+  }
+  function tick() {
+    try {
+      renderFreshness();
+      if (pollAllowed() && Date.now() - lastPollStart >= POLL_INTERVAL_MS) startPoll();
+    } finally {
+      pollTimer = setTimeout(tick, 1000); // chained timeout: survives, eslint globals have no setInterval
+    }
+  }
+  function startTicking() {
+    if (pollTimer) return;
+    if (!lastPollStart) lastPollStart = Date.now();
+    renderFreshness();
+    pollTimer = setTimeout(tick, 1000);
+  }
+  function stopTicking() {
+    if (pollTimer) {
+      clearTimeout(pollTimer);
+      pollTimer = 0;
+    }
+  }
+
   // ——— Views / views share this index document (server serves / and /queue with it). ———
   function syncView() {
     const isQueue = location.pathname.replace(/\/+$/, '') === '/queue';
@@ -110,11 +173,14 @@
     $('gate-lock').hidden = true;
     $('gate-token').value = '';
     $('gate-error').textContent = message;
+    stopTicking();
   }
   function showApp() {
     $('gate').hidden = true;
     $('app').hidden = false;
     $('gate-lock').hidden = false;
+    lastPollStart = Date.now(); // unlock() just did a full load; anchor the next cycle to it
+    startTicking();
   }
 
   // ——— Health (public GET /health). Values rendered defensively — schema fields only. ———
@@ -276,6 +342,14 @@
       .slice(0, limit);
   }
 
+  // One place flips busy so Extract/Refresh/Spawn are undouble-clickable and always restored.
+  function setBusy(value) {
+    state.busy = value;
+    $('extract').disabled = value;
+    $('refresh').disabled = value;
+    renderBoss();
+  }
+
   async function spawn(event) {
     event.preventDefault();
     const raw = $('spawn-hp').value.trim();
@@ -284,8 +358,8 @@
       note('Enter a positive whole number for boss max HP.', 'danger');
       return;
     }
-    state.busy = true;
-    renderBoss();
+    bumpEpoch();
+    setBusy(true);
     try {
       await api('/api/boss/spawn', { method: 'POST', body: { maxHp } });
       $('spawn-hp').value = '';
@@ -294,13 +368,13 @@
     } catch (err) {
       fail(err, 'Spawn failed');
     } finally {
-      state.busy = false;
-      renderBoss();
+      setBusy(false);
     }
   }
 
   async function extractLore() {
-    state.busy = true;
+    bumpEpoch();
+    setBusy(true);
     try {
       await api('/api/extract', { method: 'POST', body: {} });
       note('Extraction finished — queue updated.', 'success');
@@ -308,8 +382,23 @@
     } catch (err) {
       fail(err, 'Extraction failed');
     } finally {
-      state.busy = false;
-      renderBoss();
+      setBusy(false);
+    }
+  }
+
+  // Manual refresh: never reports success after a failure and never destroys an open
+  // editor or evidence panel; failures keep the last caption and the danger banner.
+  async function manualRefresh() {
+    if (state.busy) return;
+    if (queueInteractionActive()) {
+      note('Close the open editor or evidence panel before refreshing.', 'danger');
+      return;
+    }
+    setBusy(true);
+    try {
+      if (await loadAll()) note('Status refreshed.', 'info');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -335,6 +424,7 @@
     }
   }
   async function doPurge() {
+    bumpEpoch();
     try {
       await api('/api/purge', { method: 'POST', body: {} });
       note('Purged: all stored chat, lore and boss data removed.', 'success');
@@ -360,14 +450,32 @@
     }
   }
 
+  // Compact queue metadata: short evidence ids and readable local dates for
+  // scanning; the title attribute preserves the full ids and ISO timestamps for
+  // audit (hover/assistive tech), and the expanded panel shows the real values.
+  const shortId = (id) => `${String(id).slice(0, 8)}…`;
+  const localDateTime = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  const localWhen = (value) => {
+    const date = new Date(String(value));
+    return Number.isNaN(date.getTime()) ? String(value) : localDateTime.format(date);
+  };
   function captionFor(item) {
-    const bits = [];
-    if (item.evidenceMessageIds && Array.isArray(item.evidenceMessageIds) && item.evidenceMessageIds.length) {
-      bits.push(`evidence: ${item.evidenceMessageIds.map((id) => `#${String(id)}`).join(' ')}`);
+    const compact = [];
+    const audit = [];
+    const ids = item.evidenceMessageIds && Array.isArray(item.evidenceMessageIds) ? item.evidenceMessageIds.map(String) : [];
+    if (ids.length) {
+      compact.push(`evidence: ${ids.map((id) => `#${shortId(id)}`).join(' ')}`);
+      audit.push(`evidence: ${ids.map((id) => `#${id}`).join(' ')}`);
     }
-    if (item.createdAt) bits.push(`captured ${String(item.createdAt)}`);
-    if (item.reviewedBy) bits.push(`reviewed by ${String(item.reviewedBy)}${item.reviewedAt ? ` at ${String(item.reviewedAt)}` : ''}`);
-    return bits.join(' · ');
+    if (item.createdAt) {
+      compact.push(`captured ${localWhen(item.createdAt)}`);
+      audit.push(`captured ${String(item.createdAt)}`);
+    }
+    if (item.reviewedBy) {
+      compact.push(`reviewed by ${String(item.reviewedBy)}${item.reviewedAt ? ` at ${localWhen(item.reviewedAt)}` : ''}`);
+      audit.push(`reviewed by ${String(item.reviewedBy)}${item.reviewedAt ? ` at ${String(item.reviewedAt)}` : ''}`);
+    }
+    return { compact: compact.join(' · '), audit: audit.join(' · ') };
   }
   const kindChipClass = { catchphrase: '', rivalry: 'chip-gold', moment: 'chip-success', quote: 'chip-danger' };
 
@@ -379,6 +487,7 @@
       button.setAttribute('aria-expanded', 'false');
       return;
     }
+    bumpEpoch(); // an in-flight poll must not re-render this panel closed
     clear(panel);
     panel.hidden = false;
     panel.append(el('p', { class: 'caption', text: 'Loading evidence…' }));
@@ -387,6 +496,11 @@
       const data = await api(`/api/lore/${encodeURIComponent(String(item.id))}/evidence`);
       clear(panel);
       const messages = data && Array.isArray(data.messages) ? data.messages : [];
+      const missing = data && Array.isArray(data.missingIds) ? data.missingIds : [];
+      // Real counts from the endpoint response only — never invented aggregates.
+      const summary = [`${messages.length} stored ${messages.length === 1 ? 'message' : 'messages'} loaded`];
+      if (missing.length) summary.push(`${missing.length} missing or expired`);
+      panel.append(el('p', { class: 'caption', text: summary.join(' · ') }));
       for (const message of messages) {
         if (!message || typeof message !== 'object') continue;
         panel.append(el('p', {},
@@ -397,7 +511,6 @@
           el('span', { class: 'caption', text: String(message.ts || '') }),
         ));
       }
-      const missing = data && Array.isArray(data.missingIds) ? data.missingIds : [];
       if (missing.length) panel.append(el('p', { class: 'caption', style: 'color: var(--lb-danger);', text: `Missing or expired evidence: ${missing.map(String).join(', ')}` }));
       if (!messages.length && !missing.length) panel.append(el('p', { class: 'caption', text: 'No stored evidence for this item.' }));
       button.textContent = 'Hide evidence';
@@ -413,23 +526,25 @@
 
   async function submitReview(id, status, text) {
     if (state.busy) return;
-    state.busy = true;
+    bumpEpoch();
+    setBusy(true);
     try {
       await api(`/api/lore/${encodeURIComponent(String(id))}/review`, { method: 'POST', body: text === undefined ? { status } : { status, text } });
       note(status === 'approved' ? 'Lore approved.' : 'Lore rejected.', 'success');
       await loadStatus();
     } catch (err) {
       fail(err, 'Review failed');
-      state.busy = false; // re-enable buttons on the re-render below
+      setBusy(false); // re-enable buttons on the re-render below
       renderQueue();
       return;
     } finally {
-      state.busy = false;
+      setBusy(false);
       renderQueue();
     }
   }
 
   function openEditor(item, textHolder, actions) {
+    bumpEpoch(); // an in-flight poll must not re-render this draft away
     const area = el('textarea', { maxlength: '140', 'aria-label': 'Edit lore text' });
     area.value = typeof item.text === 'string' ? item.text : '';
     const save = el('button', { class: 'btn btn-success', type: 'button', text: 'Save & approve', onclick: () => {
@@ -458,7 +573,8 @@
     for (const item of items) {
       if (!item || typeof item.id !== 'string') continue;
       const text = el('p', { class: 'q-text', text: typeof item.text === 'string' ? item.text : '' });
-      const caption = el('p', { class: 'caption', text: captionFor(item) });
+      const meta = captionFor(item);
+      const caption = el('p', { class: 'caption', title: meta.audit || null, text: meta.compact });
       const evidence = el('div', { class: 'evidence', hidden: true, 'aria-live': 'polite' });
       const actions = el('div', { class: 'q-actions' });
       const kind = typeof item.kind === 'string' ? item.kind : 'moment';
@@ -492,7 +608,8 @@
   async function saveSettings(event) {
     event.preventDefault();
     const val = (id) => $(id).value.trim();
-    state.busy = true;
+    bumpEpoch();
+    setBusy(true);
     try {
       const optional = (key, value) => (value ? { [key]: value } : {});
       await api('/api/settings', {
@@ -514,7 +631,7 @@
     } catch (err) {
       fail(err, 'Save failed');
     } finally {
-      state.busy = false;
+      setBusy(false);
     }
   }
 
@@ -534,36 +651,104 @@
     }
   }
 
-  // ——— Loaders ———
-  async function loadHealth() {
+  // ——— Connect Twitch entry (REVIEW-02 F8). A click never navigates straight to
+  // /auth/start: it first makes the existing authenticated /api/status request, whose
+  // Set-Cookie refreshes the lb_mod cookie that /auth/start requires, so an expired
+  // cookie is restored instead of stranding the browser on a bare 401. Navigation
+  // happens only after that preflight succeeds; duplicate clicks and failures are gated,
+  // no token enters a URL, and no provider is contacted here. ———
+  async function connectTwitch(event) {
+    event.preventDefault();
+    const link = $('connect-link');
+    if (state.connectBusy) return; // duplicate click while a preflight is in flight
+    if (!getToken()) { showGate('Enter the mod token to connect Twitch.'); return; } // existing unlock gate
+    state.connectBusy = true;
+    link.setAttribute('aria-disabled', 'true');
+    let connected;
     try {
-      state.health = await api('/health');
+      const status = await api('/api/status'); // authenticated: refreshes lb_mod before /auth/start
+      connected = runtimeConnected(status.health);
     } catch (err) {
-      state.health = null;
+      state.connectBusy = false;
+      link.removeAttribute('aria-disabled');
+      if (err.status === 401 || err.status === 403) {
+        clearToken();
+        showGate('Token rejected. Enter the mod token configured on the server.');
+        return;
+      }
+      note(`Could not start authorization: ${err.message}`, 'danger');
+      return; // stay local: no navigation, no false success
+    }
+    if (connected) {
+      state.connectBusy = false;
+      link.removeAttribute('aria-disabled');
+      note('Already connected to Twitch. Disconnect below before starting a new authorization.', 'info');
+      return; // preserve the current session; do not begin a conflicting round
+    }
+    window.location.assign('/auth/start'); // session is refreshed; navigation is the success signal
+  }
+  const runtimeConnected = (health) => Boolean(health && typeof health === 'object' && health.auth && typeof health.auth === 'object' && health.auth.connected === true);
+
+  // ——— Loaders. Each captures renderEpoch before its request and discards a response
+  // that arrives after a newer mutation/edit so a slow poll cannot overwrite newer
+  // state. On failure the previous data stays visible, the danger banner explains why,
+  // and lastSyncMs/freshness only advance on a successful /api/status. ———
+  async function loadHealth() {
+    const epoch = renderEpoch;
+    let ok = false;
+    try {
+      const health = await api('/health');
+      if (epoch === renderEpoch) {
+        state.health = health;
+        ok = true;
+      }
+    } catch (err) {
       fail(err, 'Health check failed');
     }
-    renderHealth();
+    if (epoch === renderEpoch) renderHealth();
+    return ok;
   }
   async function loadStatus() {
+    const epoch = renderEpoch;
+    let ok = false;
     try {
       const status = await api('/api/status');
-      state.boss = status && typeof status.boss === 'object' ? status.boss : null;
-      state.lore = Array.isArray(status && status.lore) ? status.lore : [];
+      if (!status || typeof status !== 'object' || !Array.isArray(status.lore)) {
+        // Valid JSON with the wrong shape: keep last-known-good state and never
+        // advance freshness for data the contract does not define.
+        throw apiError('Status response was missing expected fields.', 0);
+      }
+      if (epoch === renderEpoch) {
+        state.boss = status && typeof status.boss === 'object' ? status.boss : null;
+        state.lore = Array.isArray(status && status.lore) ? status.lore : [];
+        ok = true;
+        lastSyncMs = Date.now();
+      }
     } catch (err) {
       fail(err, 'Status unavailable');
     }
-    renderQueue();
+    if (epoch === renderEpoch) {
+      renderQueue();
+      if (ok) renderFreshness();
+    }
+    return ok;
   }
   async function loadReadiness() {
+    const epoch = renderEpoch;
+    let ok = false;
     try {
-      state.readiness = await api('/api/readiness');
+      const readiness = await api('/api/readiness');
+      if (epoch === renderEpoch) {
+        state.readiness = readiness;
+        ok = true;
+      }
     } catch (err) {
-      state.readiness = null;
       fail(err, 'Saved setup unavailable');
     }
-    renderReadiness();
+    if (epoch === renderEpoch) renderReadiness();
+    return ok;
   }
-  const loadAll = () => Promise.all([loadHealth(), loadStatus(), loadReadiness()]);
+  const loadAll = async () => (await Promise.all([loadHealth(), loadStatus(), loadReadiness()])).every(Boolean);
 
   async function unlock(event) {
     event.preventDefault();
@@ -593,11 +778,12 @@
     syncView();
     $('gate-form').addEventListener('submit', unlock);
     $('gate-lock').addEventListener('click', () => { clearToken(); showGate(); });
-    $('refresh').addEventListener('click', () => { loadAll().then(() => note('Status refreshed.', 'info')); });
+    $('refresh').addEventListener('click', manualRefresh);
     $('spawn-form').addEventListener('submit', spawn);
     $('spawn-hp').addEventListener('input', renderBoss);
     $('extract').addEventListener('click', extractLore);
     $('disconnect').addEventListener('click', async () => {
+      bumpEpoch();
       try {
         await api('/api/disconnect', { method: 'POST', body: {} });
         note('Disconnected from Twitch.', 'success');
@@ -608,6 +794,22 @@
     });
     $('settings-form').addEventListener('submit', saveSettings);
     $('check-inference').addEventListener('click', checkInference);
+    $('connect-link').addEventListener('click', connectTwitch);
+    // Auto-refresh lifecycle: pause the whole tick chain while hidden, resume on visible
+    // (fetching immediately if the data is older than one cadence). Timers are stopped on
+    // unload/pagehide; the JS context going away is the final stop.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') {
+        stopTicking();
+        return;
+      }
+      if (appUnlocked()) {
+        startTicking();
+        if (pollAllowed() && Date.now() - lastPollStart >= POLL_INTERVAL_MS) startPoll();
+      }
+    });
+    window.addEventListener('pagehide', stopTicking);
+    window.addEventListener('beforeunload', stopTicking);
     renderPurge();
     renderBoss();
     renderTabs();
