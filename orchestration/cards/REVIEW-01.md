@@ -1,0 +1,11 @@
+# REVIEW-01: Research, architecture and product-use review
+
+Owner/orchestrator: Codex. Research/reviewer: OpenCode DeepSeek. User requests Codex only orchestrate, with DeepSeek and GLM doing review and implementation. This supersedes the older instruction that Codex must implement architecture-critical code during this iteration; disclose actual authorship honestly.
+
+The user approved the connected Modal endpoints after both OpenCode free-model attempts failed before review at quota. Use the catalog's Modal DeepSeek V4.1 Flash route through OpenCode. Approved model inference is allowed; do not provision infrastructure or perform other paid actions. The earlier free-tier attempts produced no findings.
+
+Read-only project review; permitted output ONLY docs/reviews/REVIEW-01-deepseek.md. Do not modify application code, configuration, test files, credentials, runtime data or other reports. Read AGENTS.md and guardrails first. Inspect RESEARCH.md, SPEC.md, ARCHITECTURE.md, README.md, docs/JUDGE_REHEARSAL.md, runtime/source/auth/lore/store/reducer code and relevant tests. Maximum 25 grouped read/search/tool calls; no delegated children, commits, live API operations, chat posting, process controls, credential reads, account setup or paid actions.
+
+Assess evidence quality and research-to-design/implementation traceability: verified platform facts versus product hypotheses, target-user pain evidence, lore confidence/evidence/PII boundaries, extraction cost and failure behavior, source/replay isolation, ownership/persistence/reconnect, deterministic combat, actual Twitch usage, judge reproducibility and overclaimed acceptance. Verify material external claims against current primary docs where tools allow; cite exact URLs and access date; otherwise label UNVERIFIED. Never turn an assumption into measured research.
+
+Report: executive outcome; research-to-code matrix; prioritized concrete findings with severity, confidence, exact path/line, reproduction or observable consequence, existing counterevidence, smallest fix and meaningful test; separate product hypotheses to validate with real streamers from confirmed bugs. Propose at most 4 initial scoped implementation cards, each under ~300 lines, with a validation gate and files. No generic rewrite or unsolicited feature expansion. State review coverage and unavailable evidence honestly.

@@ -9,8 +9,8 @@ Twitch tool for streamers: AI proposes community lore from chat → mods approve
 ## Non-negotiables
 1. Follow AGENTS.md and guardrails/*. No invented APIs: every Twitch call cites a dev.twitch.tv URL in a code comment.
 2. No hardcoded/sample data in product paths. Replay only with `LB_SOURCE=replay`, badge visible on overlay.
-3. Deterministic boss engine (pure reducer) with unit tests. LLM output validated with zod; failure = no output, never fabricated.
-4. Nothing reaches overlay/chat unless `lore_items.status='approved'`.
+3. Deterministic boss **engine** (pure reducer) with unit tests: HP, damage, crits and scored state are fully deterministic. The visible quote-attack cadence is a decorative wall-clock timer, not scored state. LLM output validated with zod; **one outbound request per invocation with no automatic retry** (explicit manual retry only); failure = no output, never fabricated.
+4. Nothing reaches overlay/chat unless `lore_items.status='approved'`. Boss naming and attack text are the approved lore verbatim (implemented); LLM-generated boss/recap prose is deferred, not shipped.
 5. Tests green + typecheck + lint before any commit.
 
 ## Stack

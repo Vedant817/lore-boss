@@ -67,8 +67,8 @@ GitHub Actions verifies Node 22/24 on Windows/Linux, including browser checks. S
 
 ## Judge rehearsal and remaining evidence
 
-- Actual Twitch OAuth/subscriptions, incoming chat, real Groq extraction, evidence review, approval, spawning, attack/heal/defeat, reload and outgoing approved-lore reply passed on 2026-10-25. See [judge rehearsal results and presentation steps](docs/JUDGE_REHEARSAL.md).
-- Actual Twitch-connected stream acceptance. Twitch CLI simulations and local OBS browser-source rendering have been checked separately. Live Bits require a suitable channel.
+- All live results are from **one broadcaster's rehearsal on 2026-10-25** — a single channel, not a multi-viewer streamed playtest. Actual Twitch OAuth/subscriptions, incoming chat, real Groq extraction, evidence review, approval, spawning, attack/heal/defeat, reload and outgoing approved-lore reply passed within that single-broadcaster scope. A real incoming raid, paid Bits and a 2–3 viewer stream remain open. See [judge rehearsal results and presentation steps](docs/JUDGE_REHEARSAL.md).
+- Actual Twitch-connected stream acceptance. Twitch CLI simulations and local OBS browser-source rendering have been checked separately and are labeled as such. Live Bits require a suitable channel.
 - A consensual live session with 2–3 viewers, real recording/footage, public video URL, and final Devpost submission. The public repository and main Codex session ID are recorded.
 
 See SPEC.md, ARCHITECTURE.md, DESIGN.md, MILESTONES.md, guardrails/, ORCHESTRATION.md and orchestration/cards/ for the brief, contracts and build records. Designs use the supplied screenshots/tokens. Verify starter hackathon dates/rules against the official event before submitting.

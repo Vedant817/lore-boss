@@ -36,27 +36,30 @@ Prizes: $10k / $6k / $4k / 2× $2.5k runner-ups, all with TwitchCon stage time.
 ### How Lore Boss scores
 | Criterion | Lore Boss answer |
 |---|---|
-| Innovation | Not "vote → effect" (Crowd Control, Streamer.bot already do that). The boss is generated *from the community's own mod-approved history*; every channel's boss is unique. Recap tools summarize; none (in our scan) turn lore into a playable boss. |
-| Impact | New viewers/raiders don't get inside jokes; lurkers don't participate. Raid recap + one-command participation addresses both. Mods keep control (approval queue). |
+| Innovation | Not "vote → effect" (Crowd Control, Streamer.bot already do that). The specific, defensible differentiator: the boss is generated *from the community's own chat history and is gated by a moderator before it can become public*. Recap tools summarize text; the five-tool spot-check below found none that turn mod-approved community lore into a playable boss. No universal-novelty or exclusivity claim is made — only the spot-check's scope. |
+| Impact | **Unvalidated product hypothesis (see §7):** new viewers/raiders may not get inside jokes and lurkers may not participate; raid recap + one-command participation is intended to address both. Mods keep control (approval queue). Not a measured benefit. |
 | Tech + Codex | EventSub WebSocket, Helix chat, deterministic engine with tests, schema-validated LLM, replay harness; one Codex orchestrator thread with logged prompts, delegated tasks, review loops. |
 | Design | Big readable overlay, "chat defeats itself" moment, 3 clear commands, setup in 5 steps. |
 
-## 6. Competitor scan (verified 2026-10-25)
-| Product | What it does (from its own site) | Gap Lore Boss fills |
+## 6. Competitor spot-check (non-exhaustive, 2026-10-25)
+This is a **historical, non-exhaustive spot-check of five public tools**, fetched from their own sites on 2026-10-25. It is not a survey, not a complete market scan, and does not establish novelty or exclusivity outside these five. Sources are the vendors' own pages; treat as dated provenance, not current fact if re-read later.
+| Product | What it does (from its own site, 2026-10-25) | Gap Lore Boss fills |
 |---|---|---|
 | Crowd Control — https://crowdcontrol.live/ | "lets your viewers send jumpscares, keybinds, in-game effects, and more" | Viewer effects into games; no community-lore generation. |
 | Streamer.bot — https://streamer.bot/ | "The most powerful stream bot with support for Twitch, YouTube, Kick, OBS Studio, Streamlabs" | General automation toolkit; you'd have to build this yourself. |
 | CatchUp.help — https://catchup.help/ | "AI livestream recap assistant… Viewers type !recap in chat and get instant AI summaries" | Recaps are text summaries of the stream; not a game, not mod-approved community lore. **Closest overlap with our raid recap — do not pitch recap as the novelty.** |
 | Pingys — https://pingys.com/ | "voice-activated AI companion… voice control for OBS, customizable personalities, automatic chat reading, real-time subtitling" | AI co-host, not a chat game. (Correction: board's Red Team described Pingys as "stream summaries"; its site describes an AI co-host.) |
 | Twitch native Polls/Predictions — https://dev.twitch.tv/docs/api/reference/ | Built-in voting | Voting only; Polls/Predictions require Affiliate/Partner. |
-Not verified here: whether any other entrant builds a similar idea (submissions aren't public before judging).
+Not verified here: whether any other entrant, or any tool outside these five, builds a similar idea (submissions aren't public before judging). No claim of universal novelty or exclusivity is made.
 
-## 7. Target users & pains
-- **Small/mid streamers (primary):** raids land and get fumbled; new viewers don't understand running jokes and lurk/leave; wanting interactivity without a complex Streamer.bot setup. (Board: Streamer Voice; product judgment, not survey data.)
-- **Mods:** worried AI will surface toxic or personal content → hard approval gate, edit/reject, blocked words.
-- **Regular chatters:** want their jokes recognized → quotes become boss attacks, MVP board.
-- **Raiders/new viewers:** need 20-second context → "Previously On…".
-Unverified assumption: magnitude of these pains; validate with 2–3 streamers on Oct 31 test day.
+## 7. Target users & pains — product hypotheses (unvalidated)
+Everything in this section is an **unvalidated product hypothesis** from product judgment/board input. There is no survey, interview transcript, retention metric or playtest artefact supporting it yet. It must not be presented as a measured benefit. The predeclared validation plan is `docs/USER_STUDY_PLAN.md` (status: NOT RUN).
+- **Small/mid streamers (primary) — hypothesis:** raids land and get fumbled; new viewers don't understand running jokes and lurk/leave; they want interactivity without a complex Streamer.bot setup. (Board: Streamer Voice; product judgment, not survey data.)
+- **Mods — hypothesis:** worried AI will surface toxic or personal content → hard approval gate, edit/reject, blocked words. **Moderator workload is unmeasured** — a likely failure mode during a heated raid.
+- **Regular chatters — hypothesis:** want their jokes recognized → quotes become boss attacks, MVP board.
+- **Raiders/new viewers — hypothesis:** need 20-second context → "Previously On…".
+- **"Fun to watch" — hypothesis:** the "chat defeats itself" moment entertains viewers (judging criterion 4). No viewer-reaction data exists; only the author's own screenshots.
+Unverified: the magnitude of every pain and benefit above. Planned validation is the predeclared study in `docs/USER_STUDY_PLAN.md`; it has **not run** and this file contains no results.
 
 ## 8. Twitch platform facts used (verified against dev.twitch.tv, see ARCHITECTURE.md §6)
 EventSub WebSocket requires **user** access tokens; 10-second subscribe window after welcome; ≤3 WS connections per user token; 300 enabled subs per connection; keepalive configurable 10–600s.
