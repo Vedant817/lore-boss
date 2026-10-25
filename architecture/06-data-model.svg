@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="320" font-family="Inter,Arial" font-size="14">
+<rect width="100%" height="100%" fill="#0E0B16"/>
+<defs><marker id="m" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#EFEFF1"/></marker></defs>
+<text x="24" y="40" fill="#EFEFF1" font-size="24" font-weight="700">6. Data model (SQLite)</text>
+<rect x="24" y="90" width="280" height="110" rx="12" fill="#18122B" stroke="#FFC83D" stroke-width="2"/>
+<text x="164.0" y="142.0" fill="#EFEFF1" text-anchor="middle">sessions</text>
+<text x="164.0" y="160.0" fill="#EFEFF1" text-anchor="middle">id, source, started_at</text>
+<rect x="336" y="90" width="280" height="110" rx="12" fill="#18122B" stroke="#FFC83D" stroke-width="2"/>
+<text x="476.0" y="142.0" fill="#EFEFF1" text-anchor="middle">chat_messages</text>
+<text x="476.0" y="160.0" fill="#EFEFF1" text-anchor="middle">id, session_id, user_id, text</text>
+<rect x="648" y="90" width="280" height="110" rx="12" fill="#18122B" stroke="#FFC83D" stroke-width="2"/>
+<text x="788.0" y="142.0" fill="#EFEFF1" text-anchor="middle">lore_items</text>
+<text x="788.0" y="160.0" fill="#EFEFF1" text-anchor="middle">id, kind, text, status, evidence</text>
+<rect x="960" y="90" width="280" height="110" rx="12" fill="#18122B" stroke="#FFC83D" stroke-width="2"/>
+<text x="1100.0" y="142.0" fill="#EFEFF1" text-anchor="middle">bosses</text>
+<text x="1100.0" y="160.0" fill="#EFEFF1" text-anchor="middle">id, name, max_hp, lore_ids</text>
+<rect x="1272" y="90" width="280" height="110" rx="12" fill="#18122B" stroke="#FFC83D" stroke-width="2"/>
+<text x="1412.0" y="142.0" fill="#EFEFF1" text-anchor="middle">damage_events</text>
+<text x="1412.0" y="160.0" fill="#EFEFF1" text-anchor="middle">boss_id, user_id, amount, crit</text>
+<line x1="304.0" y1="145.0" x2="336.0" y2="145.0" stroke="#EFEFF1" stroke-width="1.5" marker-end="url(#m)"/>
+<line x1="616.0" y1="145.0" x2="648.0" y2="145.0" stroke="#EFEFF1" stroke-width="1.5" marker-end="url(#m)"/>
+<line x1="928.0" y1="145.0" x2="960.0" y2="145.0" stroke="#EFEFF1" stroke-width="1.5" marker-end="url(#m)"/>
+<line x1="1240.0" y1="145.0" x2="1272.0" y2="145.0" stroke="#EFEFF1" stroke-width="1.5" marker-end="url(#m)"/>
+</svg>

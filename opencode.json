@@ -1,0 +1,34 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "permission": {
+    "edit": "allow",
+    "bash": "ask"
+  },
+  "agent": {
+    "implementer": {
+      "description": "Implements exactly one Lore Boss task card with tests",
+      "mode": "subagent",
+      "model": "opencode/deepseek-v4.1-flash-free",
+      "temperature": 0.1,
+      "prompt": "{file:./orchestration/prompts/implementer.md}",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow",
+        "webfetch": "allow"
+      }
+    },
+    "reviewer": {
+      "description": "Reviews a diff against the task card and REVIEW_CHECKLIST; never edits",
+      "mode": "subagent",
+      "model": "opencode/glm-5.3-flash-free",
+      "temperature": 0,
+      "prompt": "{file:./orchestration/prompts/reviewer.md}",
+      "permission": {
+        "edit": "deny",
+        "bash": "allow",
+        "webfetch": "allow"
+      }
+    }
+  }
+}

@@ -1,0 +1,41 @@
+import { test, expect } from '@playwright/test';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+const token = 'test-moderator-token-0123456789';
+test.beforeEach(async ({ request }) => { const res = await request.post('/api/test-reset', { headers: { authorization: `Bearer ${token}` } }); expect(res.ok()).toBeTruthy(); });
+test('moderation, edit, rejection, OBS state, reload and privacy purge', async ({ page, context }) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto('/'); await page.getByLabel('Mod token', { exact: true }).fill(token); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Connection', exact: true })).toBeVisible();
+  await page.reload(); await expect(page.getByRole('heading', { name: 'Connection', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Queue', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Pending (3)', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Approve', exact: true }).first().click();
+  await expect(page.getByRole('button', { name: 'Approved (1)', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Edit', exact: true }).first().click(); await page.getByLabel('Edit lore text').fill('An edited community moment'); await page.getByRole('button', { name: 'Save & approve', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Approved (2)', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Reject', exact: true }).click(); await expect(page.getByRole('button', { name: 'Rejected (1)', exact: true })).toBeVisible();
+  await page.screenshot({ path: join(tmpdir(), 'loreboss-queue.png'), fullPage: true });
+  await page.getByRole('link', { name: 'Setup', exact: true }).click(); await page.getByLabel('Boss max HP').fill('120'); await page.getByRole('button', { name: 'Spawn boss', exact: true }).click();
+  await expect(page.locator('#boss-body')).toContainText('120 / 120 HP');
+  const overlay = await context.newPage(); await overlay.goto('/overlay-view');
+  await expect(overlay.locator('#badge-replay')).toBeVisible(); await expect(overlay.locator('#ov-hp-caption')).toHaveText('120 / 120 HP');
+  const style = await overlay.locator('body').evaluate(element => ({ background: getComputedStyle(element).backgroundColor, primary: getComputedStyle(element).getPropertyValue('--lb-primary').trim() }));
+  expect(style.background).toBe('rgba(0, 0, 0, 0)'); expect(style.primary.toUpperCase()).toBe('#9146FF');
+  await overlay.screenshot({ path: join(tmpdir(), 'loreboss-overlay.png'), omitBackground: true });
+  await page.getByRole('button', { name: 'Purge session content…', exact: true }).click(); await page.getByRole('button', { name: 'Confirm purge', exact: true }).click();
+  await expect(overlay.locator('#ov-empty')).toBeVisible(); await expect(page.locator('#boss-body')).toContainText('idle');
+  expect(errors).toEqual([]);
+});
+test('gate rejects invalid token and stays usable on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 }); await page.goto('/'); await page.getByLabel('Mod token', { exact: true }).fill('invalid'); await page.getByRole('button', { name: 'Unlock', exact: true }).click(); await expect(page.locator('#gate-error')).toContainText('Token rejected');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+});
+test('overlay restores state after recap, renders heals, and formats duration', async ({ page, request }) => {
+  await page.goto('/overlay-view'); await expect(page.locator('#ov-conn')).toHaveText('connected');
+  const send = (message: Record<string, unknown>) => request.post('/api/test-overlay', { headers: { authorization: `Bearer ${token}` }, data: { v: 1, ...message } });
+  await send({ type: 'recap.show', raider: 'Fixture raider', viewers: 2, lines: ['An approved test moment'], generatedBy: 'template', durationMs: 1000 });
+  await expect(page.locator('#ov-recap')).toBeVisible(); await expect(page.locator('#ov-recap-label')).toContainText('template'); await expect(page.locator('#ov-empty')).toBeVisible();
+  await send({ type: 'boss.hit', amount: 5, cause: 'heal', crit: false }); await expect(page.locator('#ov-hitpop')).toHaveText('+5 HP');
+  await send({ type: 'boss.defeated', name: 'Approved test boss', durationMs: 119999, mvps: [] }); await expect(page.locator('#ov-defeated-name')).toContainText('1:59');
+});

@@ -1,0 +1,1 @@
+Agents are defined in ../../opencode.json (JSON form). Equivalent markdown form (per https://opencode.ai/docs/agents/) would be `implementer.md` / `reviewer.md` here with frontmatter `description, mode: subagent, model, temperature, permission`. Use one form, not both. The `{env:VAR}` and `{file:path}` substitutions follow opencode config docs — verify on your version.

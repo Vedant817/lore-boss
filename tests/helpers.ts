@@ -1,0 +1,5 @@
+import type { Config } from '../src/config.js';
+import type { LoreItem, ChatEvent } from '../src/types.js';
+export const config = (updates: Partial<Config> = {}): Config => ({ PORT: 3000, LB_SOURCE: 'live', LB_REPLAY_FILE: '', DATABASE_PATH: ':memory:', MOD_TOKEN: 'test-moderator-token-0123456789', TWITCH_CLIENT_ID: '', TWITCH_CLIENT_SECRET: '', TWITCH_REDIRECT_URI: 'http://localhost:3000/auth/callback', LLM_BASE_URL: '', LLM_MODEL: '', LLM_API_KEY: '', LB_BLOCKED_WORDS: '', LB_RECORD_FILE: '', ...updates });
+export const lore = (updates: Partial<LoreItem> = {}): LoreItem => ({ id: 'lore-1', sessionId: 'session-1', kind: 'quote', text: 'banana is a vegetable', authorUserId: 'user-1', evidenceMessageIds: ['m1', 'm2'], status: 'approved', reviewedBy: 'mod', reviewedAt: '2026-10-25T00:00:00Z', createdAt: '2026-10-25T00:00:00Z', ...updates });
+export const chat = (updates: Partial<ChatEvent> = {}): ChatEvent => ({ id: 'm1', ts: '2026-10-25T00:00:00.000Z', channelId: 'channel-1', source: 'live', kind: 'chat', userId: 'user-1', userLogin: 'viewer', userName: 'Viewer', text: 'banana is a vegetable', badges: [], ...updates });

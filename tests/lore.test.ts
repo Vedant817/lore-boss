@@ -1,0 +1,15 @@
+import { it, expect, vi } from 'vitest';
+import { validateCandidates, LoreService } from '../src/lore/service.js';
+import { LlmClient, validateLlmUrl } from '../src/llm/client.js';
+import { Store } from '../src/db/store.js';
+import { chat } from './helpers.js';
+const buffer = [chat(), chat({ id: 'm2' })];
+const item = { kind: 'quote', text: buffer[0]!.text, evidence_message_ids: ['m1', 'm2'], author_user_id: 'user-1' };
+it('accepts evidenced verbatim quote', () => expect(validateCandidates({ candidates: [item] }, buffer, [])).toHaveLength(1));
+it.each([null, {}, { candidates: [{ ...item, text: 'invented' }] }, { candidates: [{ ...item, evidence_message_ids: ['m1', 'fake'] }] }, { candidates: [{ ...item, evidence_message_ids: ['m1', 'm1'] }] }, { candidates: [{ ...item, author_user_id: 'fake' }] }])('rejects unsupported output %j', raw => expect(validateCandidates(raw, buffer, [])).toEqual([]));
+it('blocked terms reject the entire response', () => expect(validateCandidates({ candidates: [item] }, buffer, ['banana'])).toEqual([]));
+it('rejects personal data in candidates', () => expect(validateCandidates({ candidates: [{ ...item, kind: 'moment', text: 'mail me at viewer@example.com' }] }, buffer, [])).toEqual([]));
+it('LLM client fails closed on invalid JSON with at most one retry', async () => { const request = vi.fn<typeof fetch>().mockImplementation(async () => new Response('{"choices":[{"message":{"content":"bad JSON"}}]}')); await expect(new LlmClient('http://localhost:8080/v1', 'test-model', '', request).json('JSON', {})).rejects.toThrow('invalid JSON'); expect(request).toHaveBeenCalledTimes(2); });
+it('LLM client does not retry authentication failures', async () => { const request = vi.fn<typeof fetch>().mockResolvedValue(new Response('', { status: 401 })); await expect(new LlmClient('https://api.groq.com/openai/v1', 'test-model', 'secret', request).json('JSON', {})).rejects.toThrow('401'); expect(request).toHaveBeenCalledTimes(1); });
+it('LLM endpoint selection never silently routes to other providers', () => { expect(() => validateLlmUrl('https://api.openai.com/v1')).toThrow(); expect(() => validateLlmUrl('http://api.x.ai/v1')).toThrow(); expect(() => validateLlmUrl('https://foo.modal.run/v1')).not.toThrow(); });
+it('purge invalidates in-flight extraction', async () => { const store = new Store(':memory:'); store.startSession('s', 'live', 'c'); let release!: (v: Response) => void; const request = vi.fn<typeof fetch>().mockImplementation(() => new Promise(resolve => { release = resolve; })); const service = new LoreService(store, () => new LlmClient('http://localhost:8080/v1', 'test', '', request), () => 's', []); buffer.forEach(m => service.add(m)); const extraction = service.extract(); service.clear(); release(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ candidates: [item] }) } }] }))); expect(await extraction).toEqual([]); expect(store.listLore()).toEqual([]); store.close(); });

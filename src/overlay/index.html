@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lore Boss — Overlay</title>
+  <link rel="stylesheet" href="/assets/tokens.css" />
+  <style>
+    /* OBS browser source: fully transparent background. html,body rule lives in tokens.css (.ov-body). */
+    html, body { background: transparent; }
+  </style>
+</head>
+<body class="ov-body">
+  <div class="ov-root">
+    <div id="badge-replay" class="badge-replay" hidden>REPLAY MODE — LABELED</div>
+
+    <p id="ov-empty" class="ov-empty">Waiting for a boss. The streamer spawns one from the setup page once lore is approved.</p>
+
+    <section id="ov-fight" class="ov-fight" hidden aria-label="Boss fight">
+      <div class="ov-boss-panel">
+        <h2 id="ov-boss-name">Boss</h2>
+        <div class="hp-track"><div class="hp-fill" id="ov-hp-fill"></div></div>
+        <p id="ov-hp-caption" class="hp-caption caption"></p>
+      </div>
+      <div class="ov-row">
+        <aside class="ov-top-damage">
+          <p class="dg-title">Top damage</p>
+          <ol id="ov-damage-list"></ol>
+          <p id="ov-damage-empty" class="caption" hidden>Waiting for the first hit.</p>
+        </aside>
+        <div id="ov-quote" class="ov-quote" hidden>
+          <p><span class="chip chip-danger">Quote attack</span></p>
+          <p id="ov-quote-text" class="q-text"></p>
+          <p class="q-src caption"><span id="ov-quote-src">mod-approved lore</span></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="ov-defeated" class="ov-center-view ov-defeated" hidden aria-label="Boss defeated">
+      <h2 class="name">Boss defeated!</h2>
+      <p id="ov-defeated-name" style="font: var(--lb-h2-28);"></p>
+      <div class="ov-mvp">
+        <p class="dg-title" style="color: var(--lb-gold); text-transform: uppercase; font-size: 13px;">MVPs</p>
+        <ol id="ov-mvp-list"></ol>
+      </div>
+    </section>
+
+    <section id="ov-recap" class="ov-center-view" hidden aria-label="Raid recap">
+      <p><span class="chip chip-gold" id="ov-recap-pill">Raid incoming</span></p>
+      <h2>Previously on…</h2>
+      <ol id="ov-recap-lines" style="list-style: none; padding: 0; max-width: 1060px;"></ol>
+      <p id="ov-recap-label" class="caption"></p>
+      <p class="ov-recap-hint">Raiders: type !attack to join the fight →</p>
+    </section>
+
+    <p id="ov-hitpop" class="ov-pop" hidden></p>
+    <div id="ov-ticker" class="ov-ticker" hidden></div>
+    <p id="ov-conn" class="ov-conn">connecting…</p>
+  </div>
+  <script src="/assets/overlay.js" defer></script>
+</body>
+</html>

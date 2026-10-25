@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lore Boss — Setup &amp; Lore Queue</title>
+  <link rel="stylesheet" href="/assets/tokens.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="topbar">
+      <h1>Lore Boss</h1>
+      <nav aria-label="Views">
+        <a href="/" data-nav="/">Setup</a>
+        <a href="/queue" data-nav="/queue">Queue</a>
+        <button class="btn btn-quiet" type="button" id="gate-lock" hidden>Lock</button>
+      </nav>
+    </header>
+
+    <!-- Operator gate: mod token lives in sessionStorage, sent only as an Authorization header. -->
+    <section id="gate" class="card" aria-labelledby="gate-h">
+      <h2 id="gate-h">Mod access</h2>
+      <p class="caption">Enter MOD_TOKEN from the local .env file. It stays in this tab's session storage and is never placed in a URL.</p>
+      <form id="gate-form">
+        <div class="field">
+          <label for="gate-token">Mod token</label>
+          <input class="input" id="gate-token" name="token" type="password" autocomplete="off" required />
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">Unlock</button>
+        </div>
+        <p id="gate-error" class="caption" role="alert" style="color: var(--lb-danger); min-height: 1.4em;"></p>
+      </form>
+    </section>
+
+    <div id="app" hidden>
+      <p id="banner" class="banner" aria-live="polite"></p>
+
+      <!-- Setup view (also rendered at /) -->
+      <section id="view-setup" class="stack">
+        <section class="card" aria-labelledby="conn-h">
+          <div class="card-head">
+            <h2 id="conn-h">Connection</h2>
+            <button class="btn btn-quiet" type="button" id="refresh">Refresh status</button>
+          </div>
+          <dl id="health-rows" class="kv"></dl>
+        </section>
+
+        <section class="card" aria-labelledby="boss-h">
+          <div class="card-head"><h2 id="boss-h">Boss</h2></div>
+          <div id="boss-body"></div>
+          <form id="spawn-form" class="form-actions">
+            <div class="field">
+              <label for="spawn-hp">Boss max HP</label>
+              <input class="input" id="spawn-hp" type="number" min="1" step="1" inputmode="numeric" style="width: 160px;" />
+            </div>
+            <button class="btn btn-primary" type="submit">Spawn boss</button>
+          </form>
+          <p id="spawn-hint" class="caption"></p>
+          <div class="form-actions">
+            <button class="btn" type="button" id="extract">Extract lore now</button>
+          </div>
+          <h3 style="font: var(--lb-h2-28); margin: var(--lb-sp-6) 0 var(--lb-sp-2); font-size: 18px;">Danger zone</h3>
+          <div id="purge-zone" class="form-actions"></div>
+          <div class="form-actions">
+            <button class="btn btn-quiet" type="button" id="disconnect">Disconnect Twitch</button>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="settings-h">
+          <div class="card-head">
+            <h2 id="settings-h">Twitch &amp; AI settings</h2>
+            <a class="btn btn-primary" id="connect-link" href="/auth/start" rel="noopener">Connect Twitch</a>
+          </div>
+          <p class="caption">
+            Register an app first, then connect this bot to chat:
+            <a href="https://dev.twitch.tv/console/apps">dev.twitch.tv/console/apps</a> —
+            use redirect URI <code id="redirect-help"></code> there.
+            <!-- docs: https://dev.twitch.tv/docs/auth — Authorization Code flow, redirect must match the registered app. -->
+          </p>
+          <form id="settings-form" class="form-grid">
+            <div class="field">
+              <label for="set-client-id">Client ID</label>
+              <input class="input" id="set-client-id" name="clientId" type="text" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="set-client-secret">Client secret</label>
+              <input class="input" id="set-client-secret" name="clientSecret" type="password" autocomplete="new-password" />
+            </div>
+            <div class="field">
+              <label for="set-redirect-uri">Redirect URI</label>
+              <input class="input" id="set-redirect-uri" name="redirectUri" type="text" autocomplete="off" placeholder="http://localhost:3000/auth/callback" />
+            </div>
+            <div class="field">
+              <label for="set-base-url">LLM base URL</label>
+              <input class="input" id="set-base-url" name="baseUrl" type="url" autocomplete="off" />
+              <p class="caption">Groq: https://api.groq.com/openai/v1 · Modal: your deployed endpoint ending in /v1. Local compatible servers are also supported. No provider fallback. <a href="https://console.groq.com/keys">Groq API keys</a></p>
+            </div>
+            <div class="field">
+              <label for="set-model">AI model</label>
+              <input class="input" id="set-model" name="model" type="text" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="set-api-key">AI API key</label>
+              <input class="input" id="set-api-key" name="apiKey" type="password" autocomplete="new-password" />
+            </div>
+          </form>
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit" form="settings-form">Save settings</button>
+            <p id="settings-note" class="caption" aria-live="polite"></p>
+          </div>
+          <p class="caption">Blank fields preserve saved values. Secrets are never prefilled. Choose an exact model ID available at your endpoint.</p>
+          <p class="caption">OBS browser source: <a href="/overlay-view">Open overlay</a> · use a 1920 × 1080 canvas.</p>
+        </section>
+      </section>
+
+      <!-- Queue view (also rendered at /queue) -->
+      <section id="view-queue" class="stack" aria-labelledby="queue-h" hidden>
+        <section class="card">
+          <p class="caption" style="font-size: 18px;">Nothing goes on stream until a mod approves it.</p>
+          <div class="tabs" id="tabs" role="group" aria-label="Lore status"></div>
+          <div id="queue-list" class="stack" style="gap: 16px;"></div>
+        </section>
+      </section>
+    </div>
+  </main>
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

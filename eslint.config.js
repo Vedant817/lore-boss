@@ -1,0 +1,3 @@
+import js from '@eslint/js';
+import ts from 'typescript-eslint';
+export default ts.config({ ignores: ['dist/**', 'node_modules/**', '.opencode/**'] }, js.configs.recommended, ...ts.configs.recommended, { files: ['scripts/*.mjs'], languageOptions: { globals: { console: 'readonly', process: 'readonly' } } }, { files: ['src/**/*.js'], languageOptions: { globals: { document: 'readonly', window: 'readonly', fetch: 'readonly', WebSocket: 'readonly', location: 'readonly', sessionStorage: 'readonly', setTimeout: 'readonly', clearTimeout: 'readonly', URL: 'readonly', URLSearchParams: 'readonly', FormData: 'readonly' } } });

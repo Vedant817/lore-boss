@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="470" font-family="Inter,Arial" font-size="14">
+<rect width="100%" height="100%" fill="#0E0B16"/>
+<defs><marker id="m" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#EFEFF1"/></marker></defs>
+<text x="24" y="40" fill="#EFEFF1" font-size="24" font-weight="700">1. System context</text>
+<rect x="24" y="120" width="300" height="90" rx="12" fill="#18122B" stroke="#3B82F6" stroke-width="2"/>
+<text x="174.0" y="162.0" fill="#EFEFF1" text-anchor="middle">Streamer + Mods</text>
+<text x="174.0" y="180.0" fill="#EFEFF1" text-anchor="middle">(setup page, mod queue)</text>
+<rect x="560" y="120" width="340" height="110" rx="12" fill="#18122B" stroke="#9146FF" stroke-width="2"/>
+<text x="730.0" y="172.0" fill="#EFEFF1" text-anchor="middle">LORE BOSS</text>
+<text x="730.0" y="190.0" fill="#EFEFF1" text-anchor="middle">local Node/TS server</text>
+<rect x="1150" y="60" width="400" height="90" rx="12" fill="#18122B" stroke="#B57BFF" stroke-width="2"/>
+<text x="1350.0" y="102.0" fill="#EFEFF1" text-anchor="middle">Twitch</text>
+<text x="1350.0" y="120.0" fill="#EFEFF1" text-anchor="middle">EventSub WebSocket + Helix Chat API</text>
+<rect x="1150" y="220" width="400" height="90" rx="12" fill="#18122B" stroke="#FF9F43" stroke-width="2"/>
+<text x="1350.0" y="262.0" fill="#EFEFF1" text-anchor="middle">LLM provider</text>
+<text x="1350.0" y="280.0" fill="#EFEFF1" text-anchor="middle">(lore extraction, flavor text)</text>
+<rect x="560" y="340" width="340" height="90" rx="12" fill="#18122B" stroke="#2EE6A6" stroke-width="2"/>
+<text x="730.0" y="382.0" fill="#EFEFF1" text-anchor="middle">OBS browser source overlay</text>
+<text x="730.0" y="400.0" fill="#EFEFF1" text-anchor="middle">-&gt; stream -&gt; viewers</text>
+<line x1="324.0" y1="165.0" x2="560.0" y2="175.0" stroke="#EFEFF1" stroke-width="1.5" marker-end="url(#m)"/>
+<text x="446.0" y="164.0" fill="#ADADB8" font-size="12">approve / settings</text>
+<line x1="1150.0" y1="105.0" x2="900.0" y2="175.0" stroke="#EFEFF1" stroke-width="1.5" marker-end="url(#m)"/>
+<text x="1029.0" y="134.0" fill="#ADADB8" font-size="12">chat, cheer, raid</text>
+<line x1="900.0" y1="175.0" x2="1150.0" y2="265.0" stroke="#EFEFF1" stroke-width="1.5" marker-end="url(#m)"/>
+<text x="1029.0" y="214.0" fill="#ADADB8" font-size="12">schema prompts</text>
+<line x1="730.0" y1="230.0" x2="730.0" y2="340.0" stroke="#EFEFF1" stroke-width="1.5" marker-end="url(#m)"/>
+<text x="734.0" y="279.0" fill="#ADADB8" font-size="12">overlay WS</text>
+</svg>
