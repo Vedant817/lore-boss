@@ -30,7 +30,30 @@ export async function createApp(runtime: Runtime) {
     reply.code(isValidation ? 400 : 409).send({ error: isValidation ? 'Invalid request fields' : error instanceof Error && !/sqlite|SQLITE|token exchange/i.test(error.message) ? error.message : 'Operation failed; check local configuration' });
   });
   app.get('/health', () => runtime.health());
+  app.get('/api/readiness', () => ({
+    config: {
+      baseUrl: runtime.cfg.LLM_BASE_URL,
+      model: runtime.cfg.LLM_MODEL,
+      redirectUri: runtime.cfg.TWITCH_REDIRECT_URI,
+      clientIdConfigured: Boolean(runtime.cfg.TWITCH_CLIENT_ID),
+      clientSecretConfigured: Boolean(runtime.cfg.TWITCH_CLIENT_SECRET),
+      apiKeyConfigured: Boolean(runtime.cfg.LLM_API_KEY),
+    },
+    health: runtime.health(),
+    inference: runtime.llmCheck,
+  }));
+  app.post('/api/llm/check', () => runtime.checkInference());
   app.get('/api/status', () => ({ boss: runtime.boss, lore: runtime.store.listLore().filter(item => item.sessionId === runtime.sessionId), health: runtime.health() }));
+  app.get('/api/lore/:id/evidence', (request, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(request.params);
+    const sessionId = runtime.sessionId;
+    if (!sessionId) return reply.code(404).send({ error: 'Lore not found in this session' });
+    const item = runtime.store.listLore().find(item => item.id === id && item.sessionId === sessionId);
+    if (!item) return reply.code(404).send({ error: 'Lore not found in this session' });
+    const messages = runtime.store.evidence(sessionId, item.evidenceMessageIds);
+    const found = new Set(messages.map(message => message.id));
+    return { messages, missingIds: [...new Set(item.evidenceMessageIds)].filter(messageId => !found.has(messageId)) };
+  });
   app.post('/api/lore/:id/review', async request => {
     const { id } = z.object({ id: z.string().uuid() }).parse(request.params);
     const body = z.object({ status: z.enum(['approved', 'rejected']), text: z.string().trim().min(1).max(140).optional() }).strict().parse(request.body);
@@ -57,6 +80,7 @@ export async function createApp(runtime: Runtime) {
     for (const [, env] of entries) { const value = updates[env]; if (value !== undefined) runtime.cfg[env] = value; }
     runtime.auth.clientId = runtime.cfg.TWITCH_CLIENT_ID; runtime.auth.clientSecret = runtime.cfg.TWITCH_CLIENT_SECRET; runtime.auth.redirectUri = redirectUri;
     runtime.llm = new LlmClient(runtime.cfg.LLM_BASE_URL, runtime.cfg.LLM_MODEL, runtime.cfg.LLM_API_KEY);
+    runtime.resetInferenceCheck();
     return { ok: true };
   });
   app.get('/auth/start', (_request, reply) => {

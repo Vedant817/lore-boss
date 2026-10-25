@@ -12,6 +12,8 @@ const LORE_STATUSES = ['pending', 'approved', 'rejected'] as const;
 type LoreKind = LoreItem['kind'];
 type LoreStatus = LoreItem['status'];
 
+export interface EvidenceMessage { id: string; userName: string; text: string; ts: string }
+
 const LORE_COLUMNS =
   'id, session_id, kind, text, author_user_id, evidence_message_ids, status, reviewed_by, reviewed_at, created_at';
 
@@ -187,6 +189,30 @@ export class Store {
       .prepare('INSERT INTO chat_messages (id, session_id, user_id, user_name, text, ts) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(session_id, id) DO NOTHING')
       .run(event.id, sessionId, event.userId, event.userName, event.text, event.ts);
     return result.changes > 0;
+  }
+
+  // Evidence is read strictly from the active session; the caller supplies the ids and
+  // receives only rows that actually exist, in supplied order.
+  evidence(sessionId: string, ids: string[]): EvidenceMessage[] {
+    requireText(sessionId, 'session id');
+    const unique = [...new Set(ids)];
+    if (unique.length === 0) return [];
+    if (unique.length > 200) fail('evidence lookup accepts at most 200 message ids');
+    for (const id of unique) requireText(id, 'evidence message id');
+    const placeholders = unique.map(() => '?').join(',');
+    const rows = this.db
+      .prepare(`SELECT id, user_name, text, ts FROM chat_messages WHERE session_id = ? AND id IN (${placeholders})`)
+      .all(sessionId, ...unique);
+    const byId = new Map<string, EvidenceMessage>();
+    for (const row of rows) {
+      const r = asRow(row);
+      const id = text(r['id'], 'id');
+      byId.set(id, { id, userName: text(r['user_name'], 'user_name'), text: text(r['text'], 'text'), ts: text(r['ts'], 'ts') });
+    }
+    return unique.flatMap((id) => {
+      const message = byId.get(id);
+      return message === undefined ? [] : [message];
+    });
   }
 
   addCandidate(sessionId: string, candidate: Candidate): LoreItem {

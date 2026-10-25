@@ -5,11 +5,16 @@ const token = 'test-moderator-token-0123456789';
 test.beforeEach(async ({ request }) => { const res = await request.post('/api/test-reset', { headers: { authorization: `Bearer ${token}` } }); expect(res.ok()).toBeTruthy(); });
 test('moderation, edit, rejection, OBS state, reload and privacy purge', async ({ page, context }) => {
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
-  await page.goto('/'); await page.getByLabel('Mod token', { exact: true }).fill(token); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await page.goto('/test-fixture'); await page.getByRole('button', { name: 'Reset test data', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Mod access', exact: true })).toBeVisible();
+  await page.getByLabel('Mod token', { exact: true }).fill(token); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Connection', exact: true })).toBeVisible();
   await page.reload(); await expect(page.getByRole('heading', { name: 'Connection', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Queue', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Pending (3)', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'View evidence', exact: true }).first().click();
+  await expect(page.getByText(/Missing or expired evidence:/).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Hide evidence', exact: true }).first().click();
   await page.getByRole('button', { name: 'Approve', exact: true }).first().click();
   await expect(page.getByRole('button', { name: 'Approved (1)', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Edit', exact: true }).first().click(); await page.getByLabel('Edit lore text').fill('An edited community moment'); await page.getByRole('button', { name: 'Save & approve', exact: true }).click();

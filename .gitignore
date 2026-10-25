@@ -8,3 +8,8 @@ dist
 .testsprite/runs/
 test-results/
 playwright-report/
+recordings/
+*.mp4
+*.mkv
+*.mov
+*.webm

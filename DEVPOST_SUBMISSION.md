@@ -20,7 +20,7 @@ Stack: TypeScript strict, Node, Fastify, ws, SQLite/better-sqlite3, zod, plain b
 
 Kept lore private until moderation, checked evidence IDs/quote substrings, made combat deterministic, protected local operator actions, canceled in-flight authorization/extraction after disconnect or purge, preserved socket ownership during reconnect, and suppressed duplicate delivery durably. Browser verification caught hidden-view CSS and stale moderation controls; both were corrected. TestSprite reported passes while omitting assertion steps, so those verdicts were qualified rather than treated as full proof.
 
-Local evidence: 92 unit tests; typecheck/lint/build/guardrails; isolated replay browser checks; captured official Twitch CLI cheer/raid simulations. Independent core and UI reviews reported PASS. These are local/fixture results, not real Twitch stream or hosted LLM acceptance.
+Local evidence: 101 unit tests; typecheck/lint/build/guardrails; isolated replay browser checks; captured official Twitch CLI cheer/raid simulations; actual local OBS browser-source rendering. Independent opencode reviews cover core, UI, readiness and CI. These are local/fixture results, not real Twitch stream or hosted LLM acceptance. A continuously labeled synthetic preview is a review asset only.
 
 ## What we learned / next
 
@@ -28,7 +28,7 @@ A real-time overlay needs a deterministic core and explicit lifecycle ownership.
 
 ## Required items
 
-- Public repository URL: not published yet.
+- Public repository URL: https://github.com/Vedant817/lore-boss.
 - Public demo video under three minutes: not recorded/published yet. DEMO_SCRIPT.md is the storyboard.
 - Main Codex session ID: 01a17213-bdd6-76b0-ad36-6c8f9841a293.
 - Judge instructions: README.md.

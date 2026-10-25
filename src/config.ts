@@ -1,9 +1,8 @@
-import 'dotenv/config';
 import { z } from 'zod';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { parse } from 'dotenv';
+import { config as loadEnv, parse } from 'dotenv';
 import { validateLlmUrl } from './llm/client.js';
 
 const schema = z.object({
@@ -18,6 +17,7 @@ const schema = z.object({
 });
 export type Config = z.infer<typeof schema>;
 export function loadConfig(): Config {
+  loadEnv({ quiet: true });
   if (!process.env.MOD_TOKEN) {
     const values = existsSync('.env') ? parse(readFileSync('.env')) : {};
     values.MOD_TOKEN = randomBytes(32).toString('hex');

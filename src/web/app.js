@@ -8,6 +8,7 @@
   const TOKEN_KEY = 'loreboss.modToken';
   const state = {
     health: null,
+    readiness: null,
     boss: null,
     lore: [],
     tab: 'pending',
@@ -172,6 +173,65 @@
     }
   }
 
+  // ——— Saved setup + inference verification (authenticated GET /api/readiness). ———
+  // docs: card M7-02 — {config, health, inference}; secrets are booleans only.
+  function configuredLabel(value) { return value === true ? 'configured' : 'missing'; }
+  function isLoopbackUrl(value) {
+    try {
+      return ['localhost', '127.0.0.1', '[::1]'].includes(new URL(String(value)).hostname);
+    } catch {
+      return false;
+    }
+  }
+  function renderReadiness() {
+    const rows = $('readiness-rows');
+    const todo = $('readiness-todo');
+    const inferenceNote = $('inference-note');
+    clear(rows);
+    clear(todo);
+    inferenceNote.style.color = '';
+    const readiness = state.readiness && typeof state.readiness === 'object' ? state.readiness : null;
+    const cfg = readiness && readiness.config && typeof readiness.config === 'object' ? readiness.config : null;
+    if (!cfg) {
+      rows.append(el('dt', { text: 'saved setup' }), el('dd', { text: 'Unavailable — unlock with the mod token and refresh status.' }));
+      inferenceNote.textContent = '';
+      return;
+    }
+    const saved = (value) => (typeof value === 'string' && value ? value : 'not saved');
+    rows.append(
+      el('dt', { text: 'LLM base URL' }), el('dd', { text: saved(cfg.baseUrl) }),
+      el('dt', { text: 'AI model' }), el('dd', { text: saved(cfg.model) }),
+      el('dt', { text: 'Redirect URI' }), el('dd', { text: saved(cfg.redirectUri) }),
+      el('dt', { text: 'Twitch client ID' }), el('dd', { text: configuredLabel(cfg.clientIdConfigured) }),
+      el('dt', { text: 'Twitch client secret' }), el('dd', { text: configuredLabel(cfg.clientSecretConfigured) }),
+      el('dt', { text: 'AI API key' }), el('dd', { text: configuredLabel(cfg.apiKeyConfigured) }),
+    );
+    const health = readiness.health && typeof readiness.health === 'object' ? readiness.health : null;
+    const needs = [];
+    if (cfg.clientIdConfigured !== true) needs.push('Twitch client ID');
+    if (cfg.clientSecretConfigured !== true) needs.push('Twitch client secret');
+    if (!health || !health.auth || health.auth.connected !== true) needs.push('Connect Twitch');
+    if (!cfg.baseUrl) needs.push('LLM base URL');
+    if (!cfg.model) needs.push('exact AI model ID');
+    if (cfg.apiKeyConfigured !== true && !isLoopbackUrl(cfg.baseUrl)) needs.push('AI API key');
+    if (!readiness.inference || readiness.inference.verified !== true) needs.push('Verify inference with "Check inference"');
+    if (needs.length) for (const need of needs) todo.append(el('li', { text: need }));
+    else todo.append(el('li', { text: 'Nothing outstanding — saved setup and inference are verified.' }));
+    const inference = readiness.inference && typeof readiness.inference === 'object' ? readiness.inference : null;
+    if (!inference) {
+      inferenceNote.textContent = 'Not checked yet. Checking makes one request to your configured endpoint.';
+      return;
+    }
+    const when = typeof inference.checkedAt === 'string' ? inference.checkedAt : 'unknown time';
+    if (inference.verified === true) {
+      inferenceNote.textContent = `Verified ${when} — ${String(inference.model || 'model')} answered at ${String(inference.baseUrl || 'endpoint')}.`;
+      inferenceNote.style.color = 'var(--lb-success)';
+    } else {
+      inferenceNote.textContent = `Failed ${when}: ${typeof inference.error === 'string' && inference.error ? inference.error : 'no valid readiness response.'}`;
+      inferenceNote.style.color = 'var(--lb-danger)';
+    }
+  }
+
   // ——— Boss panel + spawn. HP is operator-configured, never a hardcoded number. ———
   function renderBoss() {
     const boss = state.boss && typeof state.boss === 'object' ? state.boss : null;
@@ -310,6 +370,46 @@
   }
   const kindChipClass = { catchphrase: '', rivalry: 'chip-gold', moment: 'chip-success', quote: 'chip-danger' };
 
+  async function toggleEvidence(item, panel, button) {
+    if (!panel.hidden) {
+      panel.hidden = true;
+      clear(panel);
+      button.textContent = 'View evidence';
+      button.setAttribute('aria-expanded', 'false');
+      return;
+    }
+    clear(panel);
+    panel.hidden = false;
+    panel.append(el('p', { class: 'caption', text: 'Loading evidence…' }));
+    button.disabled = true;
+    try {
+      const data = await api(`/api/lore/${encodeURIComponent(String(item.id))}/evidence`);
+      clear(panel);
+      const messages = data && Array.isArray(data.messages) ? data.messages : [];
+      for (const message of messages) {
+        if (!message || typeof message !== 'object') continue;
+        panel.append(el('p', {},
+          el('strong', { text: String(message.userName || 'unknown') }),
+          ' ',
+          el('span', { text: String(message.text || '') }),
+          ' ',
+          el('span', { class: 'caption', text: String(message.ts || '') }),
+        ));
+      }
+      const missing = data && Array.isArray(data.missingIds) ? data.missingIds : [];
+      if (missing.length) panel.append(el('p', { class: 'caption', style: 'color: var(--lb-danger);', text: `Missing or expired evidence: ${missing.map(String).join(', ')}` }));
+      if (!messages.length && !missing.length) panel.append(el('p', { class: 'caption', text: 'No stored evidence for this item.' }));
+      button.textContent = 'Hide evidence';
+      button.setAttribute('aria-expanded', 'true');
+    } catch (err) {
+      clear(panel);
+      panel.append(el('p', { class: 'caption', style: 'color: var(--lb-danger);', text: `Evidence unavailable: ${err.message}` }));
+      fail(err, 'Evidence unavailable');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
   async function submitReview(id, status, text) {
     if (state.busy) return;
     state.busy = true;
@@ -358,6 +458,7 @@
       if (!item || typeof item.id !== 'string') continue;
       const text = el('p', { class: 'q-text', text: typeof item.text === 'string' ? item.text : '' });
       const caption = el('p', { class: 'caption', text: captionFor(item) });
+      const evidence = el('div', { class: 'evidence', hidden: true, 'aria-live': 'polite' });
       const actions = el('div', { class: 'q-actions' });
       const kind = typeof item.kind === 'string' ? item.kind : 'moment';
       const card = el('article', { class: 'qcard' },
@@ -365,6 +466,7 @@
           el('p', {}, el('span', { class: `chip ${kindChipClass[kind] || ''}`, text: kind })),
           text,
           caption,
+          evidence,
         ),
         actions,
       );
@@ -376,6 +478,8 @@
           btn('Reject', 'btn-danger', () => submitReview(item.id, 'rejected')),
         );
       }
+      const viewEvidence = el('button', { class: 'btn', type: 'button', text: 'View evidence', 'aria-expanded': 'false', onclick: () => toggleEvidence(item, evidence, viewEvidence) });
+      actions.append(viewEvidence);
       list.append(card);
     }
     renderTabs();
@@ -389,26 +493,43 @@
     const val = (id) => $(id).value.trim();
     state.busy = true;
     try {
+      const optional = (key, value) => (value ? { [key]: value } : {});
       await api('/api/settings', {
         method: 'POST',
         body: {
-          clientId: val('set-client-id'),
-          clientSecret: val('set-client-secret'),
-          ...(val('set-redirect-uri') ? { redirectUri: val('set-redirect-uri') } : {}),
-          baseUrl: val('set-base-url'),
-          model: val('set-model'),
-          apiKey: val('set-api-key'),
+          ...optional('clientId', val('set-client-id')),
+          ...optional('clientSecret', val('set-client-secret')),
+          ...optional('redirectUri', val('set-redirect-uri')),
+          ...optional('baseUrl', val('set-base-url')),
+          ...optional('model', val('set-model')),
+          ...optional('apiKey', val('set-api-key')),
         },
       });
       $('set-client-secret').value = '';
       $('set-api-key').value = '';
       $('settings-note').textContent = 'Settings saved. Use "Connect Twitch" to authorize the bot.';
-      note('Settings saved.', 'success');
-      await loadHealth();
+      note('Settings saved. Inference verification was reset until you check again.', 'success');
+      await Promise.all([loadHealth(), loadReadiness()]);
     } catch (err) {
       fail(err, 'Save failed');
     } finally {
       state.busy = false;
+    }
+  }
+
+  async function checkInference() {
+    const button = $('check-inference');
+    button.disabled = true;
+    $('inference-note').textContent = 'Checking the configured endpoint…';
+    $('inference-note').style.color = '';
+    try {
+      await api('/api/llm/check', { method: 'POST', body: {} });
+      note('Inference verified: the configured model returned the readiness object.', 'success');
+    } catch (err) {
+      fail(err, 'Inference check failed');
+    } finally {
+      button.disabled = false;
+      await loadReadiness();
     }
   }
 
@@ -432,7 +553,16 @@
     }
     renderQueue();
   }
-  const loadAll = () => Promise.all([loadHealth(), loadStatus()]);
+  async function loadReadiness() {
+    try {
+      state.readiness = await api('/api/readiness');
+    } catch (err) {
+      state.readiness = null;
+      fail(err, 'Saved setup unavailable');
+    }
+    renderReadiness();
+  }
+  const loadAll = () => Promise.all([loadHealth(), loadStatus(), loadReadiness()]);
 
   async function unlock(event) {
     event.preventDefault();
@@ -476,10 +606,12 @@
       }
     });
     $('settings-form').addEventListener('submit', saveSettings);
+    $('check-inference').addEventListener('click', checkInference);
     renderPurge();
     renderBoss();
     renderTabs();
     renderQueue();
+    renderReadiness();
     loadHealth();
     if (getToken()) unlock({ preventDefault: () => {} });
   }

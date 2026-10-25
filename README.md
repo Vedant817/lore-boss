@@ -2,6 +2,8 @@
 
 Community lore becomes a Twitch raid boss. Chat provides evidence, an LLM proposes lore, a moderator approves it, and viewers fight the approved story with `!attack`, `!heal`, and Bits. Incoming raids receive a labeled recap assembled from approved lore.
 
+Public repository: https://github.com/Vedant817/lore-boss.
+
 ## Run it
 
 Requires Node 22+ and npm. Verified on Windows with Node 24.13.1. SQLite uses better-sqlite3; platforms without a prebuilt binary need its native build prerequisites.
@@ -19,8 +21,8 @@ First boot creates an ignored .env containing a random MOD_TOKEN. Open that file
 2. Unlock setup, save Client ID and Client secret, then select Connect Twitch. Authorize as the broadcaster. Scopes: user:read:chat, user:write:chat, bits:read. Identity and scopes are validated before connecting and hourly thereafter. Registration, sign-in and consent require the account owner.
 3. Configure inference. Final selected provider: **Groq**, base URL `https://api.groq.com/openai/v1`. This workspace selects `openai/gpt-oss-20b`, an open-weight model served by Groq. Save a Groq API key privately in setup. Confirm model access in your account. No inference key is configured by this repository. [Compatibility](https://console.groq.com/docs/openai), [models](https://console.groq.com/docs/models), [API keys](https://console.groq.com/keys).
 4. Alternatively save your deployed Modal OpenAI-compatible /v1 URL, exact served model ID, and endpoint credential. Modal provisioning/deployment is not claimed. Local compatible servers are supported too. There is no automatic provider/model fallback. [Modal documentation](https://modal.com/docs/examples/vllm_inference).
-5. Chat normally. Every 60 seconds, up to 200 eligible messages are submitted for extraction. Extract lore now runs the same pipeline. Invalid JSON, unsupported evidence, blocked terms or unavailable inference create no lore.
-6. Open Queue, inspect evidence IDs, then approve, edit-and-approve or reject pending items. Reviewed items are immutable. Only approved lore in the active session reaches public output. Enter your intended max HP and spawn the boss.
+5. Use Check inference in setup to verify an actual model response; saved configuration alone does not prove inference. Then chat normally. Every 60 seconds, up to 200 eligible messages are submitted for extraction. Extract lore now runs the same pipeline. Invalid JSON, unsupported evidence, blocked terms or unavailable inference create no lore.
+6. Open Queue, expand View evidence to inspect stored chat lines and any missing IDs, then approve, edit-and-approve or reject pending items. Evidence is private and scoped to the active session. Reviewed items are immutable. Only approved lore in the active session reaches public output. Enter your intended max HP and spawn the boss.
 7. Add `http://localhost:<PORT>/overlay-view` to OBS as a 1920 x 1080 Browser Source. Background is transparent. `!attack` deals 10 damage; `!heal` restores 5 boss HP, capped at max. Commands share a one-second cooldown per viewer. Bits deal twice their amount, capped at 100 per event. Anonymous Bits never invent an MVP identity. MVPs use actual damage capped by remaining HP.
 
 `!lore` sends an approved lore item through Twitch chat, rate-limited per viewer. Boss names are truncated approved text; attacks use approved text verbatim. Raid recaps are explicitly labeled templates, not claimed as LLM-generated prose.
@@ -59,13 +61,15 @@ $env:LB_BROWSER_PORT='3109'
 npx tsx tests/browser/server.ts
 ```
 
-Run a saved test with `testsprite test run <id> --local 3109 --local-host 127.0.0.1`. V3 routing and run:tunnel scope are required. The fixture uses a public test-only moderator token and memory database. Never point its credentials/reset plans at live data. Stateful plans share the fixture: run them sequentially with --max-concurrency 1. Five additional tests cost approximately 2.5 credits at 0.5 per V3 frontend run; do not auto-run the whole suite. See CODEX_LOG.md for receipts and coverage limits.
+Run a saved test with `testsprite test run <id> --local 3109 --local-host 127.0.0.1`. V3 routing and run:tunnel scope are required. The fixture uses a public test-only moderator token and memory database. Never point its credentials/reset plans at live data. Stateful plans share the fixture: run them sequentially with --max-concurrency 1. V3 frontend runs cost approximately 0.5 credit each. See CODEX_LOG.md for receipts and coverage limits.
+
+GitHub Actions verifies Node 22/24 on Windows/Linux, including browser checks. See [remaining acceptance](docs/REMAINING_ACCEPTANCE.md), [actual local OBS checks](docs/OBS_ACCEPTANCE.md), and the [labeled preview recorder](docs/PREVIEW_RECORDING.md). Hosted CI conclusions are recorded separately from local gates.
 
 ## Evidence still required
 
 - Real Twitch app registration, consent/scopes, incoming chat and outgoing approved-lore reply.
 - A real Groq/Modal extraction using valid credentials and the account's exact model. Configuration proves no inference occurred.
-- Twitch CLI captured simulation and actual OBS/stream acceptance. Live Bits require a suitable channel.
-- A consensual live session with 2–3 viewers, real recording/footage, public repository/video URLs, main Codex session ID, and final Devpost submission.
+- Actual Twitch-connected stream acceptance. Twitch CLI simulations and local OBS browser-source rendering have been checked separately. Live Bits require a suitable channel.
+- A consensual live session with 2–3 viewers, real recording/footage, public video URL, and final Devpost submission. The public repository and main Codex session ID are recorded.
 
 See SPEC.md, ARCHITECTURE.md, DESIGN.md, MILESTONES.md, guardrails/, ORCHESTRATION.md and orchestration/cards/ for the brief, contracts and build records. Designs use the supplied screenshots/tokens. Verify starter hackathon dates/rules against the official event before submitting.

@@ -109,6 +109,13 @@
             <button class="btn btn-primary" type="submit" form="settings-form">Save settings</button>
             <p id="settings-note" class="caption" aria-live="polite"></p>
           </div>
+          <h3 style="font: var(--lb-h2-28); margin: var(--lb-sp-6) 0 var(--lb-sp-2); font-size: 18px;">Saved setup</h3>
+          <dl id="readiness-rows" class="kv"></dl>
+          <ul id="readiness-todo" class="caption" style="margin: var(--lb-sp-2) 0; padding-left: 20px;"></ul>
+          <div class="form-actions">
+            <button class="btn" type="button" id="check-inference">Check inference</button>
+            <p id="inference-note" class="caption" aria-live="polite"></p>
+          </div>
           <p class="caption">Blank fields preserve saved values. Secrets are never prefilled. Choose an exact model ID available at your endpoint.</p>
           <p class="caption">OBS browser source: <a href="/overlay-view">Open overlay</a> · use a 1920 × 1080 canvas.</p>
         </section>

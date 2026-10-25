@@ -9,6 +9,7 @@ import { EventSubClient, sendChat } from './twitch/eventsub.js';
 import { idle, reduce, mvps } from './boss/reducer.js';
 import { LoreService, allowedText } from './lore/service.js';
 import { LlmClient } from './llm/client.js';
+import { probeInference, type InferenceStatus } from './llm/probe.js';
 import { commandFromChat, readReplay, ReplaySource } from './events/source.js';
 
 export class Runtime {
@@ -20,7 +21,10 @@ export class Runtime {
   boss: BossState = idle();
   sessionId: string | null = null;
   error: string | null = null;
+  llmCheck: InferenceStatus | null = null;
   broadcast: (message: Record<string, unknown>) => void = () => {};
+  private checking = false;
+  private inferenceGeneration = 0;
   private replay: ReplaySource | null = null;
   private timers: ReturnType<typeof setInterval>[] = [];
   private seen = new Set<string>();
@@ -38,6 +42,22 @@ export class Runtime {
     this.lore = new LoreService(this.store, () => this.llm, () => this.sessionId, cfg.LB_BLOCKED_WORDS.split(',').map(s => s.trim()).filter(Boolean));
   }
   health() { return { source: this.cfg.LB_SOURCE, auth: { connected: Boolean(this.auth.identity), login: this.auth.identity?.login ?? null, scopes: this.auth.identity?.scopes ?? [] }, eventsub: this.eventsub.status, llmConfigured: this.llm.configured, sessionId: this.sessionId, error: this.error ?? this.lore.error }; }
+  resetInferenceCheck(): void { this.inferenceGeneration++; this.llmCheck = null; }
+  async checkInference(): Promise<InferenceStatus> {
+    if (this.checking) throw new Error('Inference check already running');
+    this.checking = true;
+    const generation = this.inferenceGeneration;
+    try {
+      const result = await probeInference(this.llm);
+      if (generation !== this.inferenceGeneration) throw new Error('Inference check cancelled because setup changed');
+      this.llmCheck = result;
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Inference check failed';
+      if (generation === this.inferenceGeneration) this.llmCheck = { verified: false, checkedAt: new Date().toISOString(), baseUrl: this.llm.baseUrl, model: this.llm.model, error: message };
+      throw error;
+    } finally { this.checking = false; }
+  }
   approved() { return this.store.approved().filter(item => item.sessionId === this.sessionId); }
   async start(): Promise<void> {
     this.store.retain();
@@ -131,7 +151,7 @@ export class Runtime {
     if (this.sessionId) this.store.endSession(this.sessionId);
     this.sessionId = null; this.channelId = null; this.lore.clear();
   }
-  disconnect(): void { this.stopSource(); this.auth.clear(); this.boss = idle(); this.publishState(); }
+  disconnect(): void { this.stopSource(); this.auth.clear(); this.boss = idle(); this.resetInferenceCheck(); this.publishState(); }
   purge(): void { this.disconnect(); this.store.purge(); this.seen.clear(); this.cooldown.clear(); this.publishState(); }
   close(): void { if (this.disposed) return; this.disposed = true; this.timers.forEach(clearInterval); this.stopSource(); this.store.close(); }
 }
