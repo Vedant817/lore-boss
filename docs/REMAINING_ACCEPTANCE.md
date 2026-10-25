@@ -10,6 +10,7 @@ The public repository is https://github.com/Vedant817/lore-boss. Initial verifie
 - Devpost MCP was configured and its CLI OAuth login completed. The existing T3 connector originally returned reauthentication required; its workflow remains paused until a refreshed session can fetch official requirements and rule/eligibility agreement. No rules acknowledgment, registration, or submission is claimed.
 - Labeled synthetic preview generated and visually inspected: OS temp `LoreBoss-preview-2026-10-25T09-34-34-960Z/preview.mp4`, 74.880 seconds. Actual queue actions, reducer combat, raid template and defeat render through the app; no real Twitch or inference call was made. The final second-heal frame shows +5 HP. Independent opencode preview review PASS.
 - Local gates: 101 tests in 9 files, 3 browser tests, typecheck, lint, build and guardrails passed. Independent fixture-isolation review PASS. Implementation published as commit 7195dd3; CI run 40181311553 is tracked separately.
+- Five remaining TestSprite plans now ran: service terminal summary 5/5 passed, no failures/blocks/timeouts. Pinned steps verify reject; queue/edit/purge coverage is partial; spawn remains inconclusive because assertions were omitted. No further retries; local Playwright separately asserts these flows. Receipts are in CODEX_LOG.md.
 
 ## Still requires live owner participation
 
@@ -19,6 +20,8 @@ The public repository is https://github.com/Vedant817/lore-boss. Initial verifie
 4. Refresh Devpost authentication, verify event requirements, explicitly acknowledge registration/rule terms, complete the remote draft, and approve the final submission. No legal eligibility answers or final consent are inferred from the build request.
 
 CI, TestSprite and preview outcomes are appended to CODEX_LOG.md as they finish. A service-reported pass with missing assertion evidence remains qualified/inconclusive.
+
+Hosted CI is now accepted for code/workflow commit `2b84204`: [run 40181558894](https://github.com/Vedant817/lore-boss/actions/runs/40181558894) succeeded on Ubuntu and Windows 2022, each with Node 22 and 24. All four jobs passed native dependency installation, typecheck, lint, 101 tests, build, guardrails and 3 browser tests. The first run failed on windows-latest because its Visual Studio 18 was unsupported by bundled node-gyp; switching to the documented Windows 2022/Visual Studio 2022 image resolved the failure without weakening gates.
 
 ## CI pin and scan receipts
 

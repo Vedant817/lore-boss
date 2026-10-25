@@ -76,3 +76,23 @@ Final scoped reviews: M7-03 GLM PASS; M9-02 DeepSeek round 3 PASS. Root's visual
 Implementation commit `7195dd3` pushed to public main. Hosted CI run: https://github.com/Vedant817/lore-boss/actions/runs/40181311553 (outcome recorded separately below).
 
 M9-04: initial hosted run passed Ubuntu Node 22 and 24. Windows Node 22 failed before tests in npm ci: node-gyp 11.5.0 could not recognize Visual Studio 18 on windows-latest. Selected the documented windows-2022 runner with Visual Studio 2022; kept both Node versions and all native/browser gates. This changes the compiler environment, not test acceptance. Official image: https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md.
+
+## Remaining TestSprite batch: terminal evidence
+
+First batch before the fixture correction: queue run 7ae048f9-579e-4835-9d9f-ce91cdf3490d failed; edit 58393011-58ee-4415-88cd-8024c27e13ae blocked; reject a8463596-9df4-409d-a3d6-760bc7fed200 failed; spawn bfd1cd1e-2155-46e0-b64e-7012639ed0db reported passed but recorded no assertions. Root stopped the owned CLI before purge dispatched. Queue artifact retrieval was refused with environment_changed; no provider privacy restriction was bypassed. The fixture bug was reproduced and fixed locally before plans were refined.
+
+After the correction: **5/5 service-reported passed; 0 failed/blocked; 0 timed out**. Exact run-pinned steps inspected (signed artifact URLs omitted):
+
+- Queue: 2856af09-8961-4b61-825e-a62480177614, 77s; 2/4 requested assertions recorded and passed (Pending/Approved counts). Article count/evidence-text assertions omitted: partial coverage.
+- Edit/approve: 93c38988-e1e8-4aa6-9874-db7a590626d3, 99s; 1/2 assertions recorded and passed (remaining pending count). Edited-text assertion omitted: partial coverage.
+- Reject: 4d7d2267-a25e-4866-8802-8b4c502a2749, 96s; 2/2 assertions recorded and passed (one rejected article; Pending (2)). Verified within the synthetic fixture scope.
+- Spawn: 204969df-4957-4c62-a012-47c8d791cdd7, 100s; actions recorded but 0/2 assertions: **inconclusive**.
+- Purge: 6f9bee21-6d91-4288-84dd-b0145463cc68, 101s; 3/4 assertions recorded and passed (all three queue counts zero). Confirmation visibility assertion omitted, though confirmation click recorded: partial coverage.
+
+No further retries: the saved plans are now exercised, but omitted assertions are not accepted as passes. Local Playwright assertions separately cover the full moderation/spawn/purge flow. TestSprite receipts/JSON are under OS temp `loreboss-testsprite-refined*`; [project dashboard](https://www.testsprite.com/dashboard-v3/o/13130988-ffa4-52bd-8421-62ddb60605f0/projects/1c00146a-1727-4d65-af98-23905c79e278).
+
+## Hosted CI final acceptance
+
+Compiler compatibility fix `2b84204`: https://github.com/Vedant817/lore-boss/actions/runs/40181558894 concluded **SUCCESS**. All four jobs passed: Ubuntu Node 22, Ubuntu Node 24, Windows 2022 Node 22, Windows 2022 Node 24. Every cell ran npm ci, typecheck, lint, 101 unit tests, build, guardrails and 3 browser tests. This is actual hosted clean-checkout acceptance; it does not prove Twitch, Groq, viewer-playtest or submission acceptance. The earlier run 40181311553 failed on the original Windows image; its result is preserved above. M9-04 opencode GLM review PASS. Local mandatory gates were also rerun after the workflow correction: 9 files / 101 tests passed, typecheck/lint clean.
+
+Temporary TestSprite fixture and OBS replay/portable processes were stopped; the operator app remains on localhost:3137. Final evidence-only documentation commit skips CI because tested application/workflow content is unchanged from the successful run.
