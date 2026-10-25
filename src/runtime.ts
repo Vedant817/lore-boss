@@ -36,7 +36,9 @@ export class Runtime {
   private disposed = false;
   constructor(readonly cfg: Config, store?: Store, auth?: TwitchAuth) {
     this.store = store ?? new Store(cfg.DATABASE_PATH);
-    this.auth = auth ?? new TwitchAuth(cfg.TWITCH_CLIENT_ID, cfg.TWITCH_CLIENT_SECRET, cfg.TWITCH_REDIRECT_URI);
+    // Replay and memory fixtures never own the operator's persisted authorization.
+    const tokenFile = cfg.LB_SOURCE === 'replay' || cfg.DATABASE_PATH === ':memory:' ? null : undefined;
+    this.auth = auth ?? new TwitchAuth(cfg.TWITCH_CLIENT_ID, cfg.TWITCH_CLIENT_SECRET, cfg.TWITCH_REDIRECT_URI, tokenFile);
     this.llm = new LlmClient(cfg.LLM_BASE_URL, cfg.LLM_MODEL, cfg.LLM_API_KEY);
     this.eventsub = new EventSubClient(this.auth, event => this.accept(event), message => { this.error = message; });
     this.lore = new LoreService(this.store, () => this.llm, () => this.sessionId, cfg.LB_BLOCKED_WORDS.split(',').map(s => s.trim()).filter(Boolean));
@@ -68,6 +70,7 @@ export class Runtime {
     } else {
       try { await this.auth.restore(); if (this.auth.identity) this.connect(); } catch { this.auth.clear(); this.error = 'Saved Twitch authorization unavailable; connect Twitch again'; }
     }
+    this.timers.forEach(clearInterval);
     this.timers = [
       setInterval(() => { if (this.llm.configured) void this.lore.extract().catch(() => { this.error = this.lore.error; }); }, 60_000),
       setInterval(() => { this.attack(); }, 12_000),
@@ -116,13 +119,14 @@ export class Runtime {
       if (event.kind === 'command' && this.canAct(event.userId, 1000)) next = reduce(this.boss, { type: event.command === '!attack' ? 'attack' : 'heal', user: event.userName });
       else if (event.kind === 'cheer') next = reduce(this.boss, { type: 'cheer', bits: event.bits, user: event.userName });
       if (next === this.boss) return;
+      if (next.phase === 'defeated') next = { ...next, durationMs: Math.max(0, Date.now() - Date.parse(next.startedAt!)) };
       const amount = Math.abs(this.boss.hp - next.hp);
       const cause = event.kind === 'cheer' ? 'cheer' : event.command === '!heal' ? 'heal' : 'attack';
       const userId = event.userId;
       if (userId) this.store.saveDamage(next.bossId!, event.id, userId, amount, cause === 'cheer', cause, event.ts);
       this.boss = next; this.store.saveBoss(this.sessionId, next); this.publishState();
       this.send('boss.hit', { userName: event.userName ?? '', amount, crit: cause === 'cheer', cause });
-      if (next.phase === 'defeated') this.send('boss.defeated', { name: next.name, durationMs: Math.max(0, Date.now() - Date.parse(next.startedAt!)), mvps: mvps(next) });
+      if (next.phase === 'defeated') this.send('boss.defeated', { name: next.name, durationMs: next.durationMs, mvps: mvps(next) });
     } catch { this.error = 'Event processing failed; source stopped to preserve consistency'; this.stopSource(); }
   }
   private canAct(user: string, interval: number): boolean {

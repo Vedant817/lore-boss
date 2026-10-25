@@ -68,7 +68,11 @@ export async function createApp(runtime: Runtime) {
   app.post('/api/disconnect', () => { runtime.disconnect(); return { ok: true }; });
   app.post('/api/settings', request => {
     const body = z.object({ clientId: z.string().max(200).optional(), clientSecret: z.string().max(500).optional(), redirectUri: z.string().url().optional(), model: z.string().max(200).optional(), apiKey: z.string().max(2000).optional(), baseUrl: z.string().max(2000).optional() }).strict().parse(request.body);
-    if (runtime.sessionId) throw new Error('Disconnect the current session before changing settings');
+    const twitchChanges = (['clientId', 'clientSecret', 'redirectUri'] as const).some(key => {
+      const current = key === 'clientId' ? runtime.cfg.TWITCH_CLIENT_ID : key === 'clientSecret' ? runtime.cfg.TWITCH_CLIENT_SECRET : runtime.cfg.TWITCH_REDIRECT_URI;
+      return body[key] !== undefined && body[key] !== '' && body[key] !== current;
+    });
+    if (runtime.sessionId && twitchChanges) throw new Error('Disconnect the current session before changing Twitch settings');
     const redirectUri = body.redirectUri ?? runtime.cfg.TWITCH_REDIRECT_URI;
     if (redirectUri !== `http://localhost:${runtime.cfg.PORT}/auth/callback`) throw new Error('Redirect URI must match this local server');
     const baseUrl = body.baseUrl ?? runtime.cfg.LLM_BASE_URL;
@@ -80,6 +84,7 @@ export async function createApp(runtime: Runtime) {
     for (const [, env] of entries) { const value = updates[env]; if (value !== undefined) runtime.cfg[env] = value; }
     runtime.auth.clientId = runtime.cfg.TWITCH_CLIENT_ID; runtime.auth.clientSecret = runtime.cfg.TWITCH_CLIENT_SECRET; runtime.auth.redirectUri = redirectUri;
     runtime.llm = new LlmClient(runtime.cfg.LLM_BASE_URL, runtime.cfg.LLM_MODEL, runtime.cfg.LLM_API_KEY);
+    runtime.lore.invalidateExtraction();
     runtime.resetInferenceCheck();
     return { ok: true };
   });

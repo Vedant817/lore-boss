@@ -7,5 +7,5 @@ export interface CommandEvent extends Base { kind: 'command'; userId: string; us
 export type LBEvent = ChatEvent | CheerEvent | RaidEvent | CommandEvent;
 export interface LoreItem { id: string; sessionId: string | null; kind: 'catchphrase' | 'rivalry' | 'moment' | 'quote'; text: string; authorUserId: string | null; evidenceMessageIds: string[]; status: 'pending' | 'approved' | 'rejected'; reviewedBy: string | null; reviewedAt: string | null; createdAt: string }
 export type Candidate = Pick<LoreItem, 'kind' | 'text' | 'authorUserId' | 'evidenceMessageIds'>;
-export interface BossState { phase: 'idle' | 'spawning' | 'fight' | 'defeated'; bossId: string | null; name: string | null; hp: number; maxHp: number; attackPool: { loreId: string; text: string; author?: string }[]; damageByUser: Record<string, number>; startedAt: string | null }
+export interface BossState { phase: 'idle' | 'spawning' | 'fight' | 'defeated'; bossId: string | null; name: string | null; hp: number; maxHp: number; attackPool: { loreId: string; text: string; author?: string }[]; damageByUser: Record<string, number>; startedAt: string | null; durationMs?: number }
 export interface Hit { userName: string; amount: number; crit: boolean; cause: 'attack' | 'cheer' | 'heal' }

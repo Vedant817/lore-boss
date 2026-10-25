@@ -20,7 +20,7 @@ Stack: TypeScript strict, Node, Fastify, ws, SQLite/better-sqlite3, zod, plain b
 
 Kept lore private until moderation, checked evidence IDs/quote substrings, made combat deterministic, protected local operator actions, canceled in-flight authorization/extraction after disconnect or purge, preserved socket ownership during reconnect, and suppressed duplicate delivery durably. Browser verification caught hidden-view CSS and stale moderation controls; both were corrected. TestSprite reported passes while omitting assertion steps, so those verdicts were qualified rather than treated as full proof.
 
-Local evidence: 101 unit tests; typecheck/lint/build/guardrails; isolated replay browser checks; captured official Twitch CLI cheer/raid simulations; actual local OBS browser-source rendering. Independent opencode reviews cover core, UI, readiness and CI. These are local/fixture results, not real Twitch stream or hosted LLM acceptance. A continuously labeled synthetic preview is a review asset only.
+Local evidence: 105 unit tests and 4 browser tests; typecheck/lint/build/guardrails; captured official Twitch CLI cheer/raid simulations; local OBS browser-source rendering. Actual one-broadcaster Twitch/Groq rehearsal also passed: real incoming chat, extraction, evidence review/approval, spawning, attacks/healing, defeat/MVP, reload and approved-lore reply. This does not establish a multi-viewer stream, real Bits or incoming raid. A continuously labeled synthetic preview remains a separate review asset. Earlier independent opencode reviews cover core, UI, readiness and CI; the latest rehearsal review hit the provider quota and is not claimed as a PASS.
 
 ## What we learned / next
 

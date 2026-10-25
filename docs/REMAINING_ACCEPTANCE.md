@@ -14,7 +14,7 @@ The public repository is https://github.com/Vedant817/lore-boss. Initial verifie
 
 ## Still requires live owner participation
 
-1. Save Twitch app credentials and Groq key privately in local setup; complete broadcaster consent. Then run actual inference probe and chat/Helix acceptance.
+1. Completed during the judge rehearsal: private Twitch/Groq setup, default-Brave consent, enabled subscriptions, actual Groq probe/extraction and incoming/outgoing chat. See docs/JUDGE_REHEARSAL.md. Credential values are never part of the acceptance artifacts.
 2. Run a consensual stream playtest with 2–3 real viewers. Capture actual Twitch-connected footage and a real recording; do not use synthetic replay as proof of this acceptance.
 3. Complete a <3-minute video with Twitch functionality plus Codex build footage, and publish it publicly on YouTube. The local synthetic preview, when generated, is only a review asset.
 4. Refresh Devpost authentication, verify event requirements, explicitly acknowledge registration/rule terms, complete the remote draft, and approve the final submission. No legal eligibility answers or final consent are inferred from the build request.

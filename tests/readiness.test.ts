@@ -38,6 +38,32 @@ function reply(content: string, status = 200): typeof fetch {
 }
 
 describe('readiness and inference probe', () => {
+  it('allows inference settings during a session while rejecting changed Twitch credentials', async () => {
+    const { app, runtime } = await setup({ TWITCH_CLIENT_ID: 'existing-client' });
+    runtime.store.startSession('active-settings', 'live', 'channel-1'); runtime.sessionId = 'active-settings';
+    const saved = await app.inject({ method: 'POST', url: '/api/settings', headers, payload: { baseUrl: 'http://localhost:8080/v1', model: 'updated-model' } });
+    expect(saved.statusCode).toBe(200);
+    expect(runtime.sessionId).toBe('active-settings');
+    expect(runtime.llm.model).toBe('updated-model');
+    const changed = await app.inject({ method: 'POST', url: '/api/settings', headers, payload: { clientId: 'different-client' } });
+    expect(changed.statusCode).toBe(409);
+    expect(runtime.cfg.TWITCH_CLIENT_ID).toBe('existing-client');
+  });
+  it('provider changes cancel stale extraction but preserve buffered messages', async () => {
+    const { app, runtime } = await setup();
+    runtime.store.startSession('provider-change', 'live', 'channel-1'); runtime.sessionId = 'provider-change';
+    runtime.lore.add(chat()); runtime.lore.add(chat({ id: 'm2' }));
+    let release!: (response: Response) => void;
+    runtime.llm = new LlmClient('http://localhost:8080/v1', 'old-model', '', async () => new Promise(resolve => { release = resolve; }));
+    const extracting = runtime.lore.extract();
+    const saved = await app.inject({ method: 'POST', url: '/api/settings', headers, payload: { baseUrl: 'http://localhost:8080/v1', model: 'new-model' } });
+    expect(saved.statusCode).toBe(200);
+    const candidates = JSON.stringify({ candidates: [{ kind: 'quote', text: chat().text, evidence_message_ids: ['m1', 'm2'] }] });
+    release(response(candidates));
+    expect(await extracting).toEqual([]);
+    runtime.llm = new LlmClient('http://localhost:8080/v1', 'new-model', '', reply(candidates));
+    expect(await runtime.lore.extract()).toHaveLength(1);
+  });
   it('rejects an in-flight probe if setup changes instead of returning stale success', async () => {
     const { runtime } = await setup();
     let release!: (response: Response) => void;

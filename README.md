@@ -65,10 +65,9 @@ Run a saved test with `testsprite test run <id> --local 3109 --local-host 127.0.
 
 GitHub Actions verifies Node 22/24 on Windows/Linux, including browser checks. See [remaining acceptance](docs/REMAINING_ACCEPTANCE.md), [actual local OBS checks](docs/OBS_ACCEPTANCE.md), and the [labeled preview recorder](docs/PREVIEW_RECORDING.md). Hosted CI conclusions are recorded separately from local gates.
 
-## Evidence still required
+## Judge rehearsal and remaining evidence
 
-- Real Twitch app registration, consent/scopes, incoming chat and outgoing approved-lore reply.
-- A real Groq/Modal extraction using valid credentials and the account's exact model. Configuration proves no inference occurred.
+- Actual Twitch OAuth/subscriptions, incoming chat, real Groq extraction, evidence review, approval, spawning, attack/heal/defeat, reload and outgoing approved-lore reply passed on 2026-10-25. See [judge rehearsal results and presentation steps](docs/JUDGE_REHEARSAL.md).
 - Actual Twitch-connected stream acceptance. Twitch CLI simulations and local OBS browser-source rendering have been checked separately. Live Bits require a suitable channel.
 - A consensual live session with 2–3 viewers, real recording/footage, public video URL, and final Devpost submission. The public repository and main Codex session ID are recorded.
 

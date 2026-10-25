@@ -11,7 +11,7 @@ export class TwitchAuth {
   private generation = 0;
   identity: Identity | null = null;
   private pending = new Map<string, { browser: string; expires: number }>();
-  constructor(public clientId: string, public clientSecret: string, public redirectUri: string, private readonly file = './data/tokens.json', private readonly request: typeof fetch = fetch) {}
+  constructor(public clientId: string, public clientSecret: string, public redirectUri: string, private readonly file: string | null = './data/tokens.json', private readonly request: typeof fetch = fetch) {}
   begin(): { url: string; browser: string } {
     if (!this.clientId || !this.clientSecret) throw new Error('Register your Twitch app and save its credentials first');
     const state = randomBytes(32).toString('hex'); const browser = randomBytes(32).toString('hex');
@@ -33,7 +33,7 @@ export class TwitchAuth {
     try { await this.validate(); this.persist(); } catch (error) { this.clear(); throw error; }
   }
   async restore(): Promise<void> {
-    if (!existsSync(this.file)) return;
+    if (this.file === null || !existsSync(this.file)) return;
     this.token = tokens.parse(JSON.parse(readFileSync(this.file, 'utf8')));
     await this.validate();
   }
@@ -58,8 +58,8 @@ export class TwitchAuth {
     if (!this.token || !this.identity) throw new Error('Twitch is not authorized');
     return { Authorization: `Bearer ${this.token.access_token}`, 'Client-Id': this.clientId, 'Content-Type': 'application/json' };
   }
-  clear(): void { this.generation++; this.token = null; this.identity = null; this.pending.clear(); if (existsSync(this.file)) unlinkSync(this.file); }
-  private persist(): void { mkdirSync(dirname(this.file), { recursive: true }); writeFileSync(this.file, JSON.stringify(this.token), { mode: 0o600 }); }
+  clear(): void { this.generation++; this.token = null; this.identity = null; this.pending.clear(); if (this.file !== null && existsSync(this.file)) unlinkSync(this.file); }
+  private persist(): void { if (this.file === null) return; mkdirSync(dirname(this.file), { recursive: true }); writeFileSync(this.file, JSON.stringify(this.token), { mode: 0o600 }); }
   private async exchange(params: Record<string, string>): Promise<z.infer<typeof tokens>> {
     // docs: https://dev.twitch.tv/docs/authentication/refresh-tokens/
     // docs: https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#authorization-code-grant-flow

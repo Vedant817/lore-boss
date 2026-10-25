@@ -59,7 +59,7 @@ export interface CommandEvent extends Base { kind: 'command'; userId: string; us
 export type LBEvent = ChatEvent | CheerEvent | RaidEvent | CommandEvent;
 
 export type BossPhase = 'idle' | 'spawning' | 'fight' | 'defeated';
-export interface BossState { phase: BossPhase; bossId: string | null; name: string | null; hp: number; maxHp: number; attackPool: { loreId: string; text: string; author?: string }[]; damageByUser: Record<string, number>; startedAt: string | null }
+export interface BossState { phase: BossPhase; bossId: string | null; name: string | null; hp: number; maxHp: number; attackPool: { loreId: string; text: string; author?: string }[]; damageByUser: Record<string, number>; startedAt: string | null; durationMs?: number }
 ```
 Field sources (EventSub payloads): chat → `chatter_user_id/login/name`, `message.text`, `badges`; cheer → `user_id` (null if anonymous), `is_anonymous`, `bits`, `message`; raid → `from_broadcaster_user_id/login/name`, `viewers`. Verify exact names in the payload docs before coding (link §6).
 

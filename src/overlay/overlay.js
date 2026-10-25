@@ -74,7 +74,7 @@
     const phase = str(state.phase);
     if (!['idle', 'spawning', 'fight', 'defeated'].includes(phase)) return;
     if (phase === 'idle') { showView('empty'); return; }
-    if (phase === 'defeated') { showDefeated({ name: str(state.name), mvps: topDamage(state.damageByUser, 3) }); return; }
+    if (phase === 'defeated') { showDefeated({ name: str(state.name), durationMs: num(state.durationMs), mvps: topDamage(state.damageByUser, 3) }); return; }
     // spawning / fight
     showView('fight');
     els.bossName.textContent = str(state.name) || 'Boss incoming…';
@@ -91,21 +91,21 @@
     return Object.entries(damageByUser)
       .filter(([user, amount]) => typeof user === 'string' && typeof amount === 'number' && Number.isFinite(amount))
       .map(([user, amount]) => ({ user, amount }))
-      .sort((a, b) => b.amount - a.amount)
+      .sort((a, b) => b.amount - a.amount || a.user.localeCompare(b.user))
       .slice(0, limit);
   }
 
   function renderDamage(top) {
-    els.damageList.replaceChildren(...top.map((t, i) =>
-      el('li', { text: `${i + 1}. ${t.user} — ${t.amount}` })));
+    els.damageList.replaceChildren(...top.map(t =>
+      el('li', { text: `${t.user} — ${t.amount}` })));
     swap(els.damageEmpty, top.length === 0);
   }
 
   function showDefeated(data) {
     showView('defeated');
     const mvps = data.mvps || [];
-    els.mvpList.replaceChildren(...mvps.map((m, i) =>
-      el('li', { text: `${i + 1}. ${m.user} — ${m.amount}` })));
+    els.mvpList.replaceChildren(...mvps.map(m =>
+      el('li', { text: `${m.user} — ${m.amount}` })));
     if (mvps.length === 0) els.mvpList.append(el('li', { text: 'The fight ended with no recorded damage.' }));
     const name = str(data.name) || 'The boss fell.';
     const duration = num(data.durationMs);

@@ -30,6 +30,7 @@ export class LoreService {
   constructor(private readonly store: Store, private readonly llm: () => LlmClient, private readonly sessionId: () => string | null, readonly blocked: string[]) {}
   add(message: ChatEvent): void { if (allowedText(message.text, this.blocked)) this.buffer = [...this.buffer, message].slice(-200); }
   clear(): void { this.buffer = []; this.generation++; }
+  invalidateExtraction(): void { this.generation++; this.error = null; }
   async extract(): Promise<LoreItem[]> {
     if (this.busy) throw new Error('Lore extraction already running');
     const client = this.llm(); if (!client.configured) throw new Error('Configure your LLM endpoint and model first');

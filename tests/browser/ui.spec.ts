@@ -36,6 +36,23 @@ test('gate rejects invalid token and stays usable on mobile', async ({ page }) =
   await page.setViewportSize({ width: 390, height: 844 }); await page.goto('/'); await page.getByLabel('Mod token', { exact: true }).fill('invalid'); await page.getByRole('button', { name: 'Unlock', exact: true }).click(); await expect(page.locator('#gate-error')).toContainText('Token rejected');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
 });
+test('combat rankings render once and defeated summary survives reload', async ({ page, context, request }) => {
+  await page.goto('/'); await page.getByLabel('Mod token', { exact: true }).fill(token); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await page.getByRole('link', { name: 'Queue', exact: true }).click(); await page.getByRole('button', { name: 'Approve', exact: true }).first().click();
+  await page.getByRole('link', { name: 'Setup', exact: true }).click(); await page.getByLabel('Boss max HP').fill('20'); await page.getByRole('button', { name: 'Spawn boss', exact: true }).click();
+  const overlay = await context.newPage(); await overlay.goto('/overlay-view'); await expect(overlay.locator('#ov-conn')).toHaveText('connected');
+  const attack = (user: string) => request.post('/api/test-command', { headers: { authorization: `Bearer ${token}` }, data: { user, command: '!attack' } });
+  expect((await attack('Fixture Fighter')).ok()).toBeTruthy();
+  await expect(overlay.locator('#ov-damage-list li')).toHaveText(['Fixture Fighter — 10']);
+  expect((await attack('Fixture Ally')).ok()).toBeTruthy();
+  await expect(overlay.locator('#ov-defeated')).toBeVisible();
+  await expect(overlay.locator('#ov-mvp-list li')).toHaveText(['Fixture Ally — 10', 'Fixture Fighter — 10']);
+  const summary = await overlay.locator('#ov-defeated-name').textContent();
+  expect(summary).toMatch(/fought for \d+:\d{2}$/);
+  await overlay.reload();
+  await expect(overlay.locator('#ov-defeated-name')).toHaveText(summary!);
+  await expect(overlay.locator('#ov-mvp-list li')).toHaveText(['Fixture Ally — 10', 'Fixture Fighter — 10']);
+});
 test('overlay restores state after recap, renders heals, and formats duration', async ({ page, request }) => {
   await page.goto('/overlay-view'); await expect(page.locator('#ov-conn')).toHaveText('connected');
   const send = (message: Record<string, unknown>) => request.post('/api/test-overlay', { headers: { authorization: `Bearer ${token}` }, data: { v: 1, ...message } });
