@@ -31,6 +31,8 @@ Hosted CI is now accepted for code/workflow commit `2b84204`: [run 40181558894](
 
 Latest hosted acceptance (root-verified 2026-10-28): commit `a1dfedb`, [run 40206743140](https://github.com/Vedant817/lore-boss/actions/runs/40206743140), concluded **SUCCESS** on all four windows-2022/Ubuntu × Node 22/24 jobs. The `2b84204` run above stays the historical receipt for the compiler fix; the matching local final iteration gates were 129 unit / 32 browser tests with typecheck, lint, build and guardrails (recorded above).
 
+Clean-checkout release acceptance (OpenCode DeepSeek via approved Modal, 2026-10-29 IST): isolated T3 worktree at `a1dfedb`, fresh `npm ci` (188 packages, zero reported vulnerabilities), typecheck/lint/build/guardrails passed, **129 unit tests in 11 files and 32 browser tests passed**. Recorder on isolated port 3197 regenerated the labeled synthetic preview: h264 1280×720, 1855 frames, 74.200 seconds; root independently checked ffprobe, manifest and a label crop. Artifacts are under OS temp `LoreBoss-preview-2026-10-28T18-30-33-471Z`, not Git. No Twitch/LLM calls were made, fixture listeners were stopped, and this remains review footage rather than the final public Twitch/Codex video. Full receipt is in CODEX_LOG.md.
+
 ## CI pin and scan receipts
 
 Resolved from the official GitHub repositories using `gh api repos/actions/<action>/git/ref/tags/v7` on 2026-10-25; all returned `type: commit`:
