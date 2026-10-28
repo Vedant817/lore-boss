@@ -1,6 +1,6 @@
 # Remaining acceptance and evidence
 
-The public repository is https://github.com/Vedant817/lore-boss. Initial verified commits were pushed only after `gitleaks git --no-banner --redact` reported no leaks (~596 KB scanned on 2026-10-25). `.env`, databases, `tokens.json`, and `fixtures/replay/real-*` remain ignored. Preview/video/OBS artifacts are generated under OS temp, outside the repository. Hosted CI is not accepted until actual job conclusions are recorded.
+The public repository is https://github.com/Vedant817/lore-boss. Initial verified commits were pushed only after `gitleaks git --no-banner --redact` reported no leaks (~596 KB scanned on 2026-10-25). `.env`, databases, `tokens.json`, and `fixtures/replay/real-*` remain ignored. Preview/video/OBS artifacts are generated under OS temp, outside the repository. Hosted CI counts as accepted only after actual job conclusions are recorded; the recorded conclusions are below.
 
 ## Closed locally in this continuation
 
@@ -14,10 +14,12 @@ The public repository is https://github.com/Vedant817/lore-boss. Initial verifie
 
 ## Still requires live owner participation
 
+Current runtime recheck (root, 2026-10-29 IST): the local app was restarted and `/health` responds with `source=live`, `llmConfigured=true`, Twitch disconnected and EventSub disconnected. The ignored saved OAuth file is absent. Reconnect Twitch before recording a new live session; no fresh inference probe or live rehearsal is claimed by this health check. The 2026-10-25 results below remain historical evidence.
+
 1. Completed during the judge rehearsal (single broadcaster's channel, 2026-10-25): private Twitch/Groq setup, default-Brave consent, enabled subscriptions, actual Groq probe/extraction and incoming/outgoing chat. This is one broadcaster's rehearsal, not a multi-viewer playtest. See docs/JUDGE_REHEARSAL.md. Credential values are never part of the acceptance artifacts.
 2. Run a consensual stream playtest with 2–3 real viewers. Capture actual Twitch-connected footage and a real recording; do not use synthetic replay as proof of this acceptance.
 3. Complete a <3-minute video with Twitch functionality plus Codex build footage, and publish it publicly on YouTube. The local synthetic preview, when generated, is only a review asset.
-4. Refresh Devpost authentication, verify event requirements, explicitly acknowledge registration/rule terms, complete the remote draft, and approve the final submission. No legal eligibility answers or final consent are inferred from the build request.
+4. Complete Devpost submission as the owner. Official data fetched via Devpost MCP on 2026-10-28: submissions close 2026-11-02 22:00 UTC (2026-11-03 03:30 IST; source twitchcon-codex.devpost.com), and requirements are a max-3-minute public YouTube video showing the project working on Twitch and how Codex was used, the public repo URL, a project description and the main Codex session ID. Form fields 29286–29296 remain unanswered and are owner-only. The owner must still answer those fields, explicitly acknowledge registration/rule terms, complete the formal remote draft (`.devpost-hackathon-state.json` is absent, so the prepare-submission workflow stays gated), and approve the final submission. No eligibility answers or consent are inferred from the build request.
 
 The current codebase also contains a later iteration of documents, example schemas, the operator UI and the overlay authored by delegated models (opencode DeepSeek/GLM) under Codex orchestration, not by Codex itself. This does not change the recorded main Codex core session ID (`01a17213-bdd6-76b0-ad36-6c8f9841a293`); the core build thread is unchanged. Root observed the joined gates at 126 unit / 16 browser tests, typecheck, lint, build and guardrails passing before ongoing presentation refinement; those are root-run observations quoted here, not re-executed in the documentation pass.
 
@@ -26,6 +28,8 @@ Final research/design iteration gates (root, 2026-10-25): **129 unit tests in 11
 CI, TestSprite and preview outcomes are appended to CODEX_LOG.md as they finish. A service-reported pass with missing assertion evidence remains qualified/inconclusive.
 
 Hosted CI is now accepted for code/workflow commit `2b84204`: [run 40181558894](https://github.com/Vedant817/lore-boss/actions/runs/40181558894) succeeded on Ubuntu and Windows 2022, each with Node 22 and 24. All four jobs passed native dependency installation, typecheck, lint, 101 tests, build, guardrails and 3 browser tests. The first run failed on windows-latest because its Visual Studio 18 was unsupported by bundled node-gyp; switching to the documented Windows 2022/Visual Studio 2022 image resolved the failure without weakening gates.
+
+Latest hosted acceptance (root-verified 2026-10-28): commit `a1dfedb`, [run 40206743140](https://github.com/Vedant817/lore-boss/actions/runs/40206743140), concluded **SUCCESS** on all four windows-2022/Ubuntu × Node 22/24 jobs. The `2b84204` run above stays the historical receipt for the compiler fix; the matching local final iteration gates were 129 unit / 32 browser tests with typecheck, lint, build and guardrails (recorded above).
 
 ## CI pin and scan receipts
 

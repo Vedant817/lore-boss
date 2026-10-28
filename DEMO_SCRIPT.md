@@ -1,13 +1,28 @@
-# DEMO SCRIPT (< 3:00, YouTube public)
-Rules: label anything simulated on screen ("Simulated with Twitch CLI", "REPLAY of recorded session <date>"). Prefer the real stream footage from M8.
+# DEMO SCRIPT — shooting plan, target ~165 s (official limit 3:00)
 
-| Time | Visual | Voiceover |
+Official requirement (Devpost fetch, 2026-10-28): a max-3-minute video showing the project working on Twitch and how Codex was used, published public on YouTube. This plan totals **165 seconds**, leaving headroom under the limit.
+
+## Rules for every shot
+
+- **Labels:** anything simulated carries an on-screen label for the whole shot — "Simulated with Twitch CLI" or "REPLAY of recorded session <date>". Never narrate a simulated shot as live.
+- **Required footage that must be recorded first:** (1) live Twitch stream footage with the overlay working, per docs/JUDGE_REHEARSAL.md "Presenting to judges"; (2) Codex build footage from main session `01a17213-bdd6-76b0-ad36-6c8f9841a293`. The labeled synthetic preview (docs/PREVIEW_RECORDING.md) and CLI captures are fallback assets, not substitutes for these two.
+- **Evidence-review wording:** the moderator expands **actual stored evidence** captured from the live chat session — quoted text, author and message ID checked against that session. Do not claim clickable links that jump back to Twitch chat; the queue shows locally stored evidence.
+- **Cadence wording (implementation):** scored combat — HP, damage, crits, MVP — is a pure, unit-tested reducer. The visible quote-attack cadence is a decorative wall-clock timer (12 s). Never call the whole demo "deterministic".
+- **Privacy exclusions:** never show `.env`, `tokens.json`, the operator unlock token or any URL containing it, ignored private runtime files, OS-temp artifact paths, browser profile/personal tabs, or any viewer handle or quote without consent.
+
+| Time | Visual | Voiceover (+ on-screen label) |
 |---|---|---|
-| 0:00–0:15 | Stream with overlay, boss appears | "Every stream builds inside jokes. Lore Boss turns your chat's lore into a boss your chat fights together." |
-| 0:15–0:45 | Real chat → Mod queue shows lore with evidence messages → mod approves | "An LLM proposes lore *with links to the actual chat lines*. Nothing goes on stream until a mod approves." |
-| 0:45–1:25 | Boss spawns from approved lore, quotes chat; viewers `!attack`, bits crit, HP drops, MVP list | "The boss attacks with your chat's own quotes. Commands deal damage, bits crit. The fight logic is deterministic and unit-tested." |
-| 1:25–1:55 | Raid arrives → "Previously On…" recap → raiders join fight | "When a raid lands, newcomers get a 10-second recap of the lore and jump straight into the fight." (label if triggered via Twitch CLI) |
-| 1:55–2:40 | Split screen: Codex thread planning a card → `opencode run` implementer → reviewer verdict → Codex re-runs tests → commit | "We built it in one Codex thread as orchestrator: Codex planned every milestone, wrote the core EventSub client and boss engine, delegated scoped task cards to opencode subagents running DeepSeek and GLM, reviewed every diff with tests and a guardrail checklist, and looped fixes — up to three attempts — before committing." |
-| 2:40–3:00 | Boss Defeated screen, repo URL | "Lore Boss: your community's story, playable. Open source at github.com/Vedant817/lore-boss." |
+| 0:00–0:12 | Live Twitch stream, overlay; boss spawns | "Every chat builds inside jokes. Lore Boss turns your chat's lore into a boss your whole community fights." |
+| 0:12–0:37 | Live chat lines → Extract now → mod queue → expand the evidence row → approve | "An LLM proposes lore, and every proposal carries the actual chat evidence it came from — quoted text, author and message ID stored from this session. Moderators expand it, edit or reject it. Nothing reaches the overlay until it's approved." |
+| 0:37–1:17 | Fight: `!attack` / `!heal` commands, HP moves, quote attacks, MVP list | "Commands deal 10 damage; heals restore 5. Scored combat — HP, crits, MVP — is a pure, unit-tested reducer. The quote cadence you see is decorative wall-clock timing; it never touches scored state." |
+| 1:17–1:42 | Bits crit + incoming raid → "Previously On…" recap → raiders join the fight. Real footage if captured; otherwise fallback (below) | "Bits cause capped critical damage, and an incoming raid gets a 'Previously On…' recap assembled only from approved lore." [If simulated: label "Simulated with Twitch CLI" for the whole shot] |
+| 1:42–2:22 | Codex build footage: the session planning a card → OpenCode implementer → independent reviewer verdict → gates re-run → commit | "Built in one Codex session: Codex planned the milestones and wrote the core Twitch client and boss engine, then orchestrated scoped cards implemented and cross-reviewed by OpenCode DeepSeek and GLM agents over user-approved Modal endpoints. Every diff passed typecheck, lint, tests and a guardrail checklist before commit." |
+| 2:22–2:45 | Defeat screen with MVPs; reload keeps the summary; repo URL + main session ID card | "The defeat summary survives a reload. Open source at github.com/Vedant817/lore-boss. Lore Boss: your community's story, playable." |
 
-The reproducible local preview in docs/PREVIEW_RECORDING.md is labeled synthetic replay throughout. It does not replace this final Twitch-connected video or its Codex build footage.
+## Fallback shots when no paid-Bits or raid footage exists
+
+1. Trigger the same cheer/raid paths with the official Twitch CLI and keep "Simulated with Twitch CLI" on screen for the entire shot.
+2. Or cut to the continuously labeled synthetic replay clip (docs/PREVIEW_RECORDING.md) with its REPLAY badge visible.
+3. Never intercut either into a segment narrated as live, and never claim real Bits, an incoming raid, or a multi-viewer stream — none of that has happened yet.
+
+The reproducible local preview in docs/PREVIEW_RECORDING.md is labeled synthetic replay throughout. It does not replace the final Twitch-connected footage or the Codex build footage.
