@@ -74,7 +74,8 @@ export class Runtime {
     }
     this.timers.forEach(clearInterval);
     this.timers = [
-      setInterval(() => { if (this.llm.configured) void this.lore.extract().catch(() => { this.error = this.lore.error; }); }, 60_000),
+      // Keep extraction failures with LoreService so a later success clears the same error owner.
+      setInterval(() => { if (this.llm.configured) void this.lore.extract().catch(error => { this.lore.error = error instanceof Error ? error.message : 'Lore extraction failed'; }); }, 60_000),
       setInterval(() => { this.attack(); }, 12_000),
       setInterval(() => { this.store.retain(); }, 3_600_000),
       // docs: https://dev.twitch.tv/docs/authentication/validate-tokens/

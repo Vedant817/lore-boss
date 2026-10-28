@@ -38,6 +38,29 @@ function reply(content: string, status = 200): typeof fetch {
 }
 
 describe('readiness and inference probe', () => {
+  it('clears an automatic extraction error after manual recovery without clearing Twitch errors', async () => {
+    const { app, runtime } = await setup();
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    try {
+      await runtime.start();
+      runtime.store.startSession('extraction-recovery', 'live', 'channel-1');
+      runtime.sessionId = 'extraction-recovery';
+      runtime.lore.add(chat()); runtime.lore.add(chat({ id: 'm2' }));
+      const request = vi.fn<typeof fetch>()
+        .mockResolvedValueOnce(response('{}', 400))
+        .mockImplementation(reply('{"candidates":[]}'));
+      runtime.llm = new LlmClient('http://localhost:8080/v1', 'test-model', '', request);
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(runtime.health().error).toBe('LLM returned HTTP 400');
+      const recovered = await app.inject({ method: 'POST', url: '/api/extract', headers });
+      expect(recovered.statusCode).toBe(200);
+      expect(runtime.health().error).toBeNull();
+      expect(request).toHaveBeenCalledTimes(2);
+      runtime.error = 'Twitch subscription revoked; reconnect Twitch';
+      await app.inject({ method: 'POST', url: '/api/extract', headers });
+      expect(runtime.health().error).toBe('Twitch subscription revoked; reconnect Twitch');
+    } finally { runtime.close(); vi.useRealTimers(); }
+  });
   it('allows inference settings during a session while rejecting changed Twitch credentials', async () => {
     const { app, runtime } = await setup({ TWITCH_CLIENT_ID: 'existing-client' });
     runtime.store.startSession('active-settings', 'live', 'channel-1'); runtime.sessionId = 'active-settings';
