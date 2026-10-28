@@ -39,6 +39,14 @@ Fresh official Twitch CLI rehearsal (2026-10-29 IST): captured three cheer notif
 
 ## CI pin and scan receipts
 
+## Final local demo handoff — 2026-10-29 IST
+
+OpenCode DeepSeek captured real owner-channel Twitch chat, extraction/evidence/moderation/spawn and HP 25→15→20→10→0; GLM re-edited only existing footage, preserving the simulation and recorded-build labels. Root inspected the final evidence/heal/defeat screenshots, independently verified ffprobe (114.120s, H.264, 1920×1080, 2853 frames at 25fps), and copied the byte-identical video plus five stills, thumbnail, description, 21 SRT captions and provenance to the owner's Videos folder `LoreBoss-final-2026-10-29`. The ZIP is `LoreBoss-demo-package.zip`. Root verified the copy's SHA256 and scanned the selected handoff directory with gitleaks: no leaks found. Raw captures, private probes and intermediary scripts are not part of that ZIP. This is an unpublished review copy; YouTube upload and Devpost are owner actions.
+
+Root's capture review discovered a real stale-error bug after the earlier audit: an automatic-extraction failure remained in Runtime even after manual extraction recovered. Commit `adc9e96` fixes error ownership with a regression that failed before the fix and preserves unrelated Twitch errors. Final local gates: **130 unit tests / 32 browser tests**, typecheck/lint/build/guardrails passed. [Hosted run 40755658652](https://github.com/Vedant817/lore-boss/actions/runs/40755658652) succeeded in all four Ubuntu/windows-2022 × Node22/24 jobs. The provider's original HTTP400 root cause remains unproven; the capture keeps it visible with an explanation rather than claiming flawless provider reliability. No real viewers, Bits, raid, study or public broadcast is inferred.
+
+## Historical CI pin and scan receipts
+
 Resolved from the official GitHub repositories using `gh api repos/actions/<action>/git/ref/tags/v7` on 2026-10-25; all returned `type: commit`:
 
 - checkout: `3d3c42e5aac5ba805825da76410c181273ba90b1`.

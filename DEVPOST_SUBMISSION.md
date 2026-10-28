@@ -29,7 +29,7 @@ A real-time overlay needs a deterministic core and explicit lifecycle ownership.
 ## Required items
 
 - Public repository URL: https://github.com/Vedant817/lore-boss.
-- Public demo video under three minutes: not recorded/published yet. DEMO_SCRIPT.md is the shooting plan.
+- Local demo candidate completed and reviewed on 2026-10-29 IST: **114.12 seconds, 1920×1080 H.264**, real owner-channel Twitch evidence/moderation/combat, labeled CLI simulation and recorded Codex build artifacts. Durable handoff: the owner's Videos folder, `LoreBoss-final-2026-10-29/LoreBoss-demo.mp4`, with screenshots, description, captions and ZIP. It remains a review copy, not uploaded to YouTube. The owner handles publication and Devpost submission.
 - Main Codex session ID: 01a17213-bdd6-76b0-ad36-6c8f9841a293.
 - Judge instructions: README.md.
 - Any simulated footage must display replay/simulation labels.
