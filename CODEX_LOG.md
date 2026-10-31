@@ -218,3 +218,15 @@ At the owner's request, Claude Opus 5.5 (Claude Code in T3) audited the repo and
   - `!heal` at full HP produced a "+0 HP" hit and a zero-amount row. The reducer now returns the same state, so nothing is emitted.
 - Gates: typecheck, lint, 138 unit tests in 13 files, build, guardrails, 32 browser tests.
 - Still not done (needs real people, not code): a 2–3-viewer playtest (M8), real paid Bits and a real incoming raid, and the owner's YouTube/Devpost submission (M10). LLM-written recap prose, sounds and boss portraits remain documented optional cuts.
+
+## Human-style end-to-end check and fixes (Claude Opus 5.5, 2026-11-02 IST)
+
+The user asked for the app to be used as a human would. Two passes found five real issues:
+- **Judge pass** (fresh `git clone` of 9a74b1c, `npm ci`, `npm run fixture`, README steps through the real UI, README PowerShell snippet run verbatim): 12/12 functional checks passed, but the screenshots showed two judge-facing problems.
+  1. The first seeded item ("The banana council has spoken", the one the README says to approve) showed red "Missing or expired evidence". The fixture now stores synthetic supporting chat lines for the first two items. "One more attempt" keeps deliberately expired IDs to demonstrate the retention state, and the README says so.
+  2. `/overlay-view` is transparent for OBS, so in a normal browser tab its text was nearly unreadable. An opt-in `?preview` adds a solid `--lb-bg` backdrop, and the plain URL stays transparent (browser test asserts both).
+  3. Evidence lines printed raw ISO timestamps. They now use the dashboard's existing local-time formatter, with ISO kept in the title.
+- **Streamer pass** (live app on the owner's channel, Helix chat as the broadcaster, real UI, Twitch popout chat read back):
+  4. Groq returned HTTP 400 on 2 of 3 extractions in JSON object mode. Per https://console.groq.com/docs/structured-outputs, strict `json_schema` (constrained decoding) "never errors or produces invalid JSON" and is supported on `openai/gpt-oss-20b`/`120b`. The client now uses strict mode only for those Groq models; Modal and local endpoints keep `json_object`. Through the app's own LoreService, 8/8 real Groq extractions succeeded, and the readiness probe verified.
+  5. A re-run on the restarted live app extracted on the first attempt. Approve, spawn, a real `!heal` at full HP (no change, no overlay hit), `!attack` ×3 to defeat with MVP and `!lore` replies all worked in real Twitch chat. An earlier run with two approved items showed `!lore` rotating between them.
+- Gates: typecheck, lint, 142 unit tests in 13 files, build, guardrails, 32 browser tests.

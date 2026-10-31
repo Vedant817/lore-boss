@@ -11,6 +11,7 @@ export const READINESS_PROMPT =
   'Inference readiness check. Return only the JSON object {"ok":true}. Do not include commentary, markdown, code fences, or any other fields.';
 
 const readiness = z.object({ ok: z.literal(true) }).strict();
+const READINESS_FORMAT = { name: 'readiness', schema: { type: 'object', additionalProperties: false, required: ['ok'], properties: { ok: { type: 'boolean' } } } };
 
 export interface InferenceVerified {
   verified: true;
@@ -32,7 +33,7 @@ export type InferenceStatus = InferenceVerified | InferenceFailed;
 /** Runs one bounded JSON-only inference. Throws unless the exact ready shape came back. */
 export async function probeInference(client: LlmClient): Promise<InferenceVerified> {
   if (!client.configured) throw new Error('Configure the LLM base URL, exact model, and API key for hosted endpoints first');
-  const raw = await client.json(READINESS_PROMPT, { purpose: 'inference-readiness' });
+  const raw = await client.json(READINESS_PROMPT, { purpose: 'inference-readiness' }, READINESS_FORMAT);
   if (!readiness.safeParse(raw).success) throw new Error('LLM returned an invalid readiness response');
   return { verified: true, checkedAt: new Date().toISOString(), baseUrl: client.baseUrl, model: client.model };
 }

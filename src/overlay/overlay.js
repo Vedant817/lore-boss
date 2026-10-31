@@ -271,6 +271,8 @@
     }
   }
 
+  // ?preview adds a solid backdrop for browser viewing; the plain URL stays transparent for OBS.
+  if (new URLSearchParams(location.search).has('preview')) document.documentElement.classList.add('ov-preview');
   swap(els.quote, false); // start clean before hello
   showView('empty');
   connect();

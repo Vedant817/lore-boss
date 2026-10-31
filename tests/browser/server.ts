@@ -18,7 +18,17 @@ const app = await createApp(runtime);
 app.addContentTypeParser('application/x-www-form-urlencoded', { parseAs: 'string' }, (_request, body, done) => done(null, body));
 async function seed(): Promise<void> {
   runtime.purge(); await runtime.start();
-  for (const [kind, text] of [['quote', 'The banana council has spoken'], ['moment', 'The shortcut became a scenic route'], ['catchphrase', 'One more attempt']] as const) runtime.store.addCandidate(runtime.sessionId!, { kind, text, authorUserId: null, evidenceMessageIds: ['fixture-message-1', 'fixture-message-2'] });
+  const sessionId = runtime.sessionId!;
+  // Synthetic chat lines (fixture only) stored as real evidence, so View evidence shows supporting messages.
+  const stored = (key: string, lines: readonly (readonly [string, string])[]) => lines.map(([user, text], index) => {
+    const id = `fixture-${key}-${index + 1}`;
+    runtime.store.saveChat(sessionId, { id, ts: new Date().toISOString(), source: 'replay', channelId: 'test-channel', kind: 'chat', userId: `fixture-${user}`, userLogin: user, userName: user, text, badges: [] });
+    return id;
+  });
+  runtime.store.addCandidate(sessionId, { kind: 'quote', text: 'The banana council has spoken', authorUserId: null, evidenceMessageIds: stored('banana', [['ana', 'The banana council has spoken. Pineapple is banned.'], ['bo', 'all rise for the banana council']]) });
+  runtime.store.addCandidate(sessionId, { kind: 'moment', text: 'The shortcut became a scenic route', authorUserId: null, evidenceMessageIds: stored('shortcut', [['bo', 'took the shortcut, ten minutes later we are sightseeing'], ['cy', 'the shortcut became a scenic route again']]) });
+  // Deliberately expired evidence: demonstrates the honest "missing or expired" state after retention.
+  runtime.store.addCandidate(sessionId, { kind: 'catchphrase', text: 'One more attempt', authorUserId: null, evidenceMessageIds: ['fixture-message-1', 'fixture-message-2'] });
 }
 app.post('/api/test-reset', async () => { await seed(); return { ok: true }; });
 app.post('/api/test-overlay', request => { runtime.broadcast(request.body as Record<string, unknown>); return { ok: true }; });

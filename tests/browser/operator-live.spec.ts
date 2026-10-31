@@ -231,7 +231,10 @@ test('failed reviews and evidence loads recover with controls re-enabled', async
   await page.unroute('**/api/lore/*/evidence');
   await page.getByRole('button', { name: 'View evidence', exact: true }).first().click(); // collapse failed panel
   await page.getByRole('button', { name: 'View evidence', exact: true }).first().click(); // retry loads
-  await expect(panel).toContainText('Missing or expired evidence');
+  await expect(panel).toContainText('2 stored messages loaded');
+  await expect(panel).toContainText('the shortcut became a scenic route again'); // banana was approved above
+  await expect(panel.locator('span.caption').first()).toHaveAttribute('title', /\d{4}-\d{2}-\d{2}T/); // ISO kept for audit
+  await expect(panel.locator('span.caption').first()).not.toHaveText(/\d{4}-\d{2}-\d{2}T/); // readable local time on screen
   await expect(page.getByRole('button', { name: 'Hide evidence', exact: true }).first()).toBeVisible();
   await page.unrouteAll();
 });

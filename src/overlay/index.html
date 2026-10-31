@@ -8,6 +8,8 @@
   <style>
     /* OBS browser source: fully transparent background. html,body rule lives in tokens.css (.ov-body). */
     html, body { background: transparent; }
+    /* Opt-in ?preview: solid backdrop so the overlay is readable in a normal browser tab. Never used by OBS. */
+    html.ov-preview { background: var(--lb-bg); }
   </style>
 </head>
 <body class="ov-body">

@@ -24,8 +24,8 @@ npm run fixture        # http://localhost:3107 (set LB_BROWSER_PORT to change)
 ```
 
 1. Open http://localhost:3107. Unlock with the public, fixture-only token `test-moderator-token-0123456789`.
-2. **Queue**: open *View evidence*, then **Approve** "The banana council has spoken" (or Edit and approve it). Spawn the boss with 100 HP.
-3. Open http://localhost:3107/overlay-view in a second window. This is exactly what OBS renders.
+2. **Queue**: open *View evidence* to see the chat lines behind each item, then **Approve** "The banana council has spoken" (or Edit and approve it). The third item, "One more attempt", deliberately shows *missing or expired evidence*, which is what a moderator sees once chat retention has deleted the supporting lines. On **Setup**, spawn the boss with 100 HP.
+3. Open http://localhost:3107/overlay-view?preview in a second window. This is what OBS renders; `?preview` only adds a dark backdrop so it is readable in a browser tab (OBS uses `/overlay-view`, which is transparent).
 4. Make "chat" fight. Each command goes through the same reducer that live EventSub chat uses:
 
 ```powershell
@@ -40,7 +40,7 @@ Repeat the attack line until the boss falls to see the defeat/MVP screen. Each v
 
 ## How Codex was used
 
-Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`). Codex turned the project brief into a spec, architecture and milestone plan ([SPEC.md](SPEC.md), [ARCHITECTURE.md](ARCHITECTURE.md), [MILESTONES.md](MILESTONES.md)). It implemented the core: Twitch OAuth/EventSub/Helix, the deterministic boss reducer, the evidence-checked LLM extraction pipeline and the app wiring. Codex wrote guardrails ([guardrails/](guardrails/)) and scoped task cards ([orchestration/cards/](orchestration/cards/)) for smaller UI/doc/review iterations. It delegated those to other coding agents, reviewed their diffs and ran the gates (typecheck, lint, 138 unit tests, 32 Playwright browser tests, CI on Windows/Linux × Node 22/24). The full build record, including which model did which card, is in [CODEX_LOG.md](CODEX_LOG.md).
+Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`). Codex turned the project brief into a spec, architecture and milestone plan ([SPEC.md](SPEC.md), [ARCHITECTURE.md](ARCHITECTURE.md), [MILESTONES.md](MILESTONES.md)). It implemented the core: Twitch OAuth/EventSub/Helix, the deterministic boss reducer, the evidence-checked LLM extraction pipeline and the app wiring. Codex wrote guardrails ([guardrails/](guardrails/)) and scoped task cards ([orchestration/cards/](orchestration/cards/)) for smaller UI/doc/review iterations. It delegated those to other coding agents, reviewed their diffs and ran the gates (typecheck, lint, 142 unit tests, 32 Playwright browser tests, CI on Windows/Linux × Node 22/24). The full build record, including which model did which card, is in [CODEX_LOG.md](CODEX_LOG.md).
 
 ## Run it
 
@@ -59,7 +59,7 @@ First boot creates an ignored .env containing a random MOD_TOKEN. Open that file
 2. Unlock setup, save Client ID and Client secret, then select Connect Twitch. Authorize as the broadcaster. Scopes: user:read:chat, user:write:chat, bits:read. Identity and scopes are validated before connecting and hourly thereafter. Registration, sign-in and consent require the account owner.
 3. Configure inference. Final selected provider: **Groq**, base URL `https://api.groq.com/openai/v1`. We tested with `openai/gpt-oss-20b`, an open-weight model served by Groq. Save a Groq API key privately in setup. Confirm model access in your account. No inference key is configured by this repository. [Compatibility](https://console.groq.com/docs/openai), [models](https://console.groq.com/docs/models), [API keys](https://console.groq.com/keys).
 4. Alternatively save your deployed Modal OpenAI-compatible /v1 URL, exact served model ID, and endpoint credential. Modal provisioning/deployment is not claimed. Local compatible servers are supported too. There is no automatic provider/model fallback. [Modal documentation](https://modal.com/docs/examples/vllm_inference).
-5. Use Check inference in setup to verify an actual model response; saved configuration alone does not prove inference. Then chat normally. Every 60 seconds, up to 200 eligible messages are submitted for extraction. Extract lore now runs the same pipeline. Invalid JSON, unsupported evidence, blocked terms or unavailable inference create no lore.
+5. On Groq with `openai/gpt-oss-20b` or `openai/gpt-oss-120b`, requests use strict Structured Outputs (constrained decoding, [docs](https://console.groq.com/docs/structured-outputs)); other endpoints use JSON object mode. Use Check inference in setup to verify an actual model response; saved configuration alone does not prove inference. Then chat normally. Every 60 seconds, up to 200 eligible messages are submitted for extraction. Extract lore now runs the same pipeline. Invalid JSON, unsupported evidence, blocked terms or unavailable inference create no lore.
 6. Open Queue, expand View evidence to inspect stored chat lines and any missing IDs, then approve, edit-and-approve or reject pending items. Evidence is private and scoped to the active session. Reviewed items are immutable. Only approved lore in the active session reaches public output. Enter your intended max HP and spawn the boss.
 7. Add `http://localhost:<PORT>/overlay-view` to OBS as a 1920 x 1080 Browser Source. Background is transparent. `!attack` deals 10 damage; `!heal` restores 5 boss HP, capped at max. Commands share a one-second cooldown per viewer. Bits deal twice their amount, capped at 100 per event. Anonymous Bits never invent an MVP identity. MVPs use actual damage capped by remaining HP.
 

@@ -508,7 +508,7 @@
           ' ',
           el('span', { text: String(message.text || '') }),
           ' ',
-          el('span', { class: 'caption', text: String(message.ts || '') }),
+          el('span', { class: 'caption', title: String(message.ts || ''), text: localWhen(message.ts) }),
         ));
       }
       if (missing.length) panel.append(el('p', { class: 'caption', style: 'color: var(--lb-danger);', text: `Missing or expired evidence: ${missing.map(String).join(', ')}` }));

@@ -104,7 +104,8 @@ test('overlay idle copy speaks to viewers, not to the streamer', async ({ page }
 test('queue captions are compact while full audit values stay accessible', async ({ page }) => {
   await unlock(page);
   await page.getByRole('link', { name: 'Queue', exact: true }).click();
-  const caption = page.locator('#queue-list article .caption').first();
+  const expired = page.locator('#queue-list article').filter({ hasText: 'One more attempt' });
+  const caption = expired.locator('.caption').first();
   const text = (await caption.textContent()) ?? '';
   expect(text).toMatch(/evidence: #\S+… #\S+… · captured /); // short ids + readable local date
   expect(text).not.toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:/); // no raw ISO stamp on screen
@@ -113,8 +114,8 @@ test('queue captions are compact while full audit values stay accessible', async
   expect(audit).toContain('#fixture-message-1'); // full evidence ids preserved in the title
   expect(audit).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:/); // full ISO timestamp preserved in the title
   // Expanded evidence shows real loaded/missing counts from the endpoint response.
-  await page.getByRole('button', { name: 'View evidence', exact: true }).first().click();
-  const panel = page.locator('.evidence').first();
+  await expired.getByRole('button', { name: 'View evidence', exact: true }).click();
+  const panel = expired.locator('.evidence');
   await expect(panel).toContainText('0 stored messages loaded · 2 missing or expired');
   await expect(panel).toContainText('Missing or expired evidence: fixture-message-1, fixture-message-2'); // full ids, existing format
 });

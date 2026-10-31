@@ -13,7 +13,9 @@ test('moderation, edit, rejection, OBS state, reload and privacy purge', async (
   await page.getByRole('link', { name: 'Queue', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Pending (3)', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'View evidence', exact: true }).first().click();
-  await expect(page.getByText(/Missing or expired evidence:/).first()).toBeVisible();
+  await expect(page.locator('.evidence').first()).toContainText('2 stored messages loaded');
+  await expect(page.locator('.evidence').first()).toContainText('The banana council has spoken. Pineapple is banned.');
+  await expect(page.locator('.evidence').first()).not.toContainText('Missing or expired');
   await page.getByRole('button', { name: 'Hide evidence', exact: true }).first().click();
   await page.getByRole('button', { name: 'Approve', exact: true }).first().click();
   await expect(page.getByRole('button', { name: 'Approved (1)', exact: true })).toBeVisible();
@@ -30,6 +32,11 @@ test('moderation, edit, rejection, OBS state, reload and privacy purge', async (
   await expect(overlay.locator('#badge-replay')).toBeVisible(); await expect(overlay.locator('#ov-hp-caption')).toHaveText('120 / 120 HP');
   const style = await overlay.locator('body').evaluate(element => ({ background: getComputedStyle(element).backgroundColor, primary: getComputedStyle(element).getPropertyValue('--lb-primary').trim() }));
   expect(style.background).toBe('rgba(0, 0, 0, 0)'); expect(style.primary.toUpperCase()).toBe('#9146FF');
+  const preview = await context.newPage(); await preview.goto('/overlay-view?preview');
+  await expect(preview.locator('#ov-hp-caption')).toHaveText('120 / 120 HP');
+  expect(await preview.locator('html').evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgb(14, 11, 22)');
+  expect(await overlay.locator('html').evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
+  await preview.close();
   await overlay.screenshot({ path: join(tmpdir(), 'loreboss-overlay.png'), omitBackground: true });
   await page.getByRole('button', { name: 'Purge session content…', exact: true }).click(); await page.getByRole('button', { name: 'Confirm purge', exact: true }).click();
   await expect(overlay.locator('#ov-empty')).toBeVisible(); await expect(page.locator('#boss-body')).toContainText('idle');

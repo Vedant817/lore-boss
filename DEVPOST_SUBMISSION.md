@@ -35,7 +35,7 @@ Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`)
 - turned the brief into a spec, architecture, milestone plan, design system (from supplied reference screenshots) and **guardrails** (no hallucinated APIs, so every external call cites its official doc URL; no fake data; replay must be a labeled flag; tests required);
 - implemented the core itself: Twitch OAuth with identity/scope validation, the EventSub WebSocket client with reconnect and durable de-duplication, the **pure deterministic boss reducer**, the evidence-checked LLM extraction pipeline (zod-validated, prompt-injection-aware) and the Fastify app wiring;
 - wrote scoped task cards for smaller UI, docs and review iterations, delegated them to other coding agents, reviewed their diffs and kept implementer and reviewer models distinct;
-- ran the gates on every change: TypeScript strict typecheck, ESLint, 138 Vitest unit tests, 32 Playwright browser tests, plus GitHub Actions on Windows and Linux × Node 22/24.
+- ran the gates on every change: TypeScript strict typecheck, ESLint, 142 Vitest unit tests, 32 Playwright browser tests, plus GitHub Actions on Windows and Linux × Node 22/24.
 
 The full card-by-card record is in `CODEX_LOG.md`.
 
@@ -45,7 +45,7 @@ Stack: TypeScript (strict), Node 22+, Fastify, ws, SQLite via better-sqlite3, zo
 
 - **Keeping an LLM honest about real people.** We solved it structurally rather than by prompting alone: every candidate must cite real message IDs, quotes must be exact substrings, blocked terms are filtered, and a human approves everything.
 - **Real-time correctness.** EventSub can redeliver events, sockets reconnect, and moderators can purge mid-extraction. We used a deterministic reducer, durable event de-duplication and generation counters, so in-flight work is cancelled after a disconnect or purge.
-- **Provider quirks.** JSON-mode inference occasionally rejects a generation. The app now reports a plain-language status, keeps the chat buffer and retries on the next cycle, without double-sending.
+- **Provider quirks.** In live testing, Groq's JSON object mode rejected some extractions with HTTP 400, and Groq documents that this happens occasionally. On Groq models that support it (`openai/gpt-oss-20b`/`120b`), Lore Boss now uses strict Structured Outputs. Constrained decoding there always produces schema-valid JSON, and evidence is still validated afterwards. Any other failure creates no lore, shows a plain-language status and retries on the next cycle without double-sending.
 
 ## Accomplishments that we're proud of
 
@@ -73,7 +73,7 @@ npm ci
 npm run fixture
 ```
 
-Open http://localhost:3107 and unlock with the public fixture-only token `test-moderator-token-0123456789`. Approve a lore item, spawn the boss, open http://localhost:3107/overlay-view, then send attacks with the PowerShell snippet in the README ("For judges"). For the real Twitch flow, follow the README's "Run it": register a Twitch app, connect, configure Groq, chat, approve, spawn and add `/overlay-view` to OBS.
+Open http://localhost:3107 and unlock with the public fixture-only token `test-moderator-token-0123456789`. Approve a lore item, spawn the boss, open http://localhost:3107/overlay-view?preview (dark backdrop for browser viewing; OBS uses the transparent `/overlay-view`), then send attacks with the PowerShell snippet in the README ("For judges"). For the real Twitch flow, follow the README's "Run it": register a Twitch app, connect, configure Groq, chat, approve, spawn and add `/overlay-view` to OBS.
 
 ---
 

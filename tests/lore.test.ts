@@ -1,6 +1,6 @@
 import { it, expect, vi, afterEach } from 'vitest';
-import { validateCandidates, LoreService } from '../src/lore/service.js';
-import { HTTP_400_MESSAGE, LlmClient, validateLlmUrl } from '../src/llm/client.js';
+import { validateCandidates, LoreService, CANDIDATES_FORMAT } from '../src/lore/service.js';
+import { HTTP_400_MESSAGE, LlmClient, validateLlmUrl, strictSchemaSupported } from '../src/llm/client.js';
 import { Store } from '../src/db/store.js';
 import { chat } from './helpers.js';
 const buffer = [chat(), chat({ id: 'm2' })];
@@ -105,4 +105,30 @@ it('LLM client explains an HTTP 400 without reading the provider body or resendi
   await expect(failure).rejects.not.toThrow('provider detail');
   expect(body).not.toHaveBeenCalled();
   expect(request).toHaveBeenCalledTimes(1);
+});
+// docs: https://console.groq.com/docs/structured-outputs (strict mode on openai/gpt-oss-20b and openai/gpt-oss-120b).
+const sentFormat = async (baseUrl: string, model: string, key: string) => {
+  const request = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: '{"candidates":[]}' } }] })));
+  await new LlmClient(baseUrl, model, key, request).json('JSON', [], CANDIDATES_FORMAT);
+  return (JSON.parse(String(request.mock.calls[0]![1]!.body)) as { response_format: Record<string, unknown> }).response_format;
+};
+it('uses strict json_schema on Groq models documented for constrained decoding', async () => {
+  const format = await sentFormat('https://api.groq.com/openai/v1', 'openai/gpt-oss-20b', 'secret');
+  expect(format).toEqual({ type: 'json_schema', json_schema: { name: 'lore_candidates', strict: true, schema: CANDIDATES_FORMAT.schema } });
+  expect(strictSchemaSupported('https://api.groq.com/openai/v1', 'openai/gpt-oss-120b')).toBe(true);
+});
+it('keeps json_object mode for other Groq models, Modal and local endpoints', async () => {
+  expect(await sentFormat('https://api.groq.com/openai/v1', 'other-model', 'secret')).toEqual({ type: 'json_object' });
+  expect(await sentFormat('https://example-app.modal.run/v1', 'openai/gpt-oss-20b', 'secret')).toEqual({ type: 'json_object' });
+  expect(await sentFormat('http://localhost:8080/v1', 'openai/gpt-oss-20b', '')).toEqual({ type: 'json_object' });
+});
+it('strict schema closes every object and requires every field, as strict mode demands', () => {
+  const root = CANDIDATES_FORMAT.schema as { additionalProperties: boolean; required: string[]; properties: { candidates: { items: { additionalProperties: boolean; required: string[]; properties: Record<string, unknown> } } } };
+  const items = root.properties.candidates.items;
+  expect(root.additionalProperties).toBe(false); expect(items.additionalProperties).toBe(false);
+  expect([...items.required].sort()).toEqual(Object.keys(items.properties).sort());
+});
+it('accepts a null author from strict mode and still validates evidence', () => {
+  expect(validateCandidates({ candidates: [{ ...item, kind: 'catchphrase', author_user_id: null }] }, buffer, [])).toEqual([{ kind: 'catchphrase', text: item.text, authorUserId: null, evidenceMessageIds: ['m1', 'm2'] }]);
+  expect(validateCandidates({ candidates: [{ ...item, author_user_id: null, evidence_message_ids: ['m1', 'invented'] }] }, buffer, [])).toEqual([]);
 });
