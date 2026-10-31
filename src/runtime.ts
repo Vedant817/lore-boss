@@ -33,6 +33,7 @@ export class Runtime {
   private recordFd: number | null = null;
   private recordStart = 0;
   private attackIndex = 0;
+  private loreIndex = 0;
   private disposed = false;
   constructor(readonly cfg: Config, store?: Store, auth?: TwitchAuth) {
     this.store = store ?? new Store(cfg.DATABASE_PATH);
@@ -92,7 +93,7 @@ export class Runtime {
   private newSession(channelId: string): void {
     this.sessionId = randomUUID(); this.channelId = channelId;
     this.store.startSession(this.sessionId, this.cfg.LB_SOURCE, channelId);
-    this.seen.clear(); this.cooldown.clear(); this.lore.clear(); this.boss = idle();
+    this.seen.clear(); this.cooldown.clear(); this.lore.clear(); this.boss = idle(); this.loreIndex = 0;
     if (this.cfg.LB_RECORD_FILE) {
       if (this.cfg.LB_SOURCE !== 'live') throw new Error('Recording only accepts live Twitch events');
       mkdirSync(dirname(this.cfg.LB_RECORD_FILE), { recursive: true });
@@ -114,7 +115,12 @@ export class Runtime {
       }
       if (event.kind === 'raid') { this.recap(event); return; }
       if (event.kind === 'command' && event.command === '!lore') {
-        const first = this.approved()[0]; if (first && event.source === 'live' && this.canAct(event.userId + ':lore', 10_000)) void sendChat(this.auth, first.text).catch(() => { this.eventsub.stop(); this.error = 'Twitch chat send failed; reconnect Twitch'; });
+        // Rotates through this session's approved lore so repeated !lore does not repeat one line.
+        const approved = this.approved();
+        if (approved.length && event.source === 'live' && this.canAct(event.userId + ':lore', 10_000)) {
+          const item = approved[this.loreIndex++ % approved.length]!;
+          void sendChat(this.auth, item.text).catch(() => { this.eventsub.stop(); this.error = 'Twitch chat send failed; reconnect Twitch'; });
+        }
         return;
       }
       if (this.boss.phase !== 'fight') return;

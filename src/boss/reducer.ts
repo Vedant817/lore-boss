@@ -18,7 +18,8 @@ export function reduce(state: BossState, action: BossAction): BossState {
   }
   if (action.type === 'start') return state.phase === 'spawning' ? { ...state, phase: 'fight' } : state;
   if (state.phase !== 'fight') return state;
-  if (action.type === 'heal') return action.user ? { ...state, hp: Math.min(state.maxHp, state.hp + 5) } : state;
+  // A heal at full HP changes nothing, so it returns the same state and emits no "+0 HP" event.
+  if (action.type === 'heal') return action.user && state.hp < state.maxHp ? { ...state, hp: Math.min(state.maxHp, state.hp + 5) } : state;
   if (action.type === 'cheer' && (!Number.isSafeInteger(action.bits) || action.bits <= 0)) return state;
   const user = action.user;
   if (action.type === 'attack' && !user) return state;

@@ -208,3 +208,13 @@ At the owner's request, Claude Opus 5.5 (Claude Code in T3) audited the repo and
 - The DeepSeek judge walkthrough (on pre-fix dcc083a) confirmed the gates and the fixture fight loop, and its top findings were already fixed in 17e7408. Fixed in response to its remaining findings: setting PORT alone crashed because the Twitch redirect defaulted to :3000 (it now follows PORT unless set explicitly); a busy port gave only a generic startup error (it is now named; other startup errors stay generic); the README had a stale port sentence and replay wording that implied a shipped recording; TestSprite internals moved to docs/TESTSPRITE.md; and three real stills from the 2026-11-01 recording now sit in docs/screenshots and the README. Production dependencies have 0 npm audit findings; the 11 moderate advisories are dev-only (minimatch).
 - Final gates: typecheck, lint, 133 unit tests in 12 files, build, guardrails, 32 browser tests.
 - Still open (unchanged): a multi-viewer stream, real Bits and a real raid; YouTube upload and Devpost submission are the owner's actions.
+
+## No-fakes and completeness re-audit (Claude Opus 5.5, 2026-11-02 IST)
+
+- Read every product file in `src/` against guardrails/NO_FAKES.md and SPEC.md. No sample users, quotes, lore, HP numbers, demo branches or canned results were found. Every Twitch/LLM call cites its docs URL. The only test-only routes live in `tests/browser/server.ts`.
+- Fixed three real issues, each with a regression test that fails on the previous code:
+  - The replay loader filled in `replay:<n>` event IDs and a `'replay'` channel when a line lacked them. It now fails closed, like the existing `ts` rule, because `npm run record` always writes both.
+  - `!lore` always replied with the first approved item. It now rotates through the session's approved lore.
+  - `!heal` at full HP produced a "+0 HP" hit and a zero-amount row. The reducer now returns the same state, so nothing is emitted.
+- Gates: typecheck, lint, 138 unit tests in 13 files, build, guardrails, 32 browser tests.
+- Still not done (needs real people, not code): a 2–3-viewer playtest (M8), real paid Bits and a real incoming raid, and the owner's YouTube/Devpost submission (M10). LLM-written recap prose, sounds and boss portraits remain documented optional cuts.

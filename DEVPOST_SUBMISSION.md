@@ -26,7 +26,7 @@ Lore Boss turns a community's own chat history into a boss fight.
 3. **Moderator stays in control.** Proposals go to a private queue. The moderator sees the exact supporting chat lines and approves, edits or rejects each one. Nothing reaches the stream until it is approved.
 4. **Spawns a boss.** Approved lore becomes a raid boss in a transparent 1920×1080 OBS browser-source overlay. Its name and attacks are the community's own approved lore.
 5. **Chat fights back.** `!attack` deals 10, `!heal` restores 5, and Bits land critical hits (2× Bits, capped at 100). Commands have a per-viewer cooldown, and duplicate events are suppressed. The defeat screen ranks MVPs by actual damage.
-6. **Raids get a recap.** An incoming raid triggers a labeled "previously on…" recap built from approved lore. `!lore` replies in chat with an approved item.
+6. **Raids get a recap.** An incoming raid triggers a labeled "previously on…" recap built from approved lore. `!lore` replies in chat, rotating through approved lore.
 
 ## How we built it (how we used Codex)
 
@@ -35,7 +35,7 @@ Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`)
 - turned the brief into a spec, architecture, milestone plan, design system (from supplied reference screenshots) and **guardrails** (no hallucinated APIs, so every external call cites its official doc URL; no fake data; replay must be a labeled flag; tests required);
 - implemented the core itself: Twitch OAuth with identity/scope validation, the EventSub WebSocket client with reconnect and durable de-duplication, the **pure deterministic boss reducer**, the evidence-checked LLM extraction pipeline (zod-validated, prompt-injection-aware) and the Fastify app wiring;
 - wrote scoped task cards for smaller UI, docs and review iterations, delegated them to other coding agents, reviewed their diffs and kept implementer and reviewer models distinct;
-- ran the gates on every change: TypeScript strict typecheck, ESLint, 133 Vitest unit tests, 32 Playwright browser tests, plus GitHub Actions on Windows and Linux × Node 22/24.
+- ran the gates on every change: TypeScript strict typecheck, ESLint, 138 Vitest unit tests, 32 Playwright browser tests, plus GitHub Actions on Windows and Linux × Node 22/24.
 
 The full card-by-card record is in `CODEX_LOG.md`.
 

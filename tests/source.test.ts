@@ -17,6 +17,14 @@ it('fails closed on a replay event with no ISO ts instead of inventing a date', 
   expect(() => readReplay(file([withoutTs]))).toThrow(/ts/);
   expect(() => readReplay(file([withoutTs]))).toThrow(/t_ms/);
 });
+it('fails closed on a replay event with no event id instead of inventing one', () => {
+  const withoutId = chat(); delete (withoutId as { id?: string }).id;
+  expect(() => readReplay(file([withoutId]))).toThrow(/line 1 is missing its event id/);
+});
+it('fails closed on a replay event with no channelId instead of a placeholder channel', () => {
+  const withoutChannel = chat(); delete (withoutChannel as { channelId?: string }).channelId;
+  expect(() => readReplay(file([withoutChannel]))).toThrow(/line 1 is missing channelId/);
+});
 it('requires ts on every event, not just the first', () => {
   const withoutTs = chat({ id: 'm2' }); delete (withoutTs as { ts?: string }).ts;
   expect(() => readReplay(file([chat(), withoutTs]))).toThrow(/line 2/);

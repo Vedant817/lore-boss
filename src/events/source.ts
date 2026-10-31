@@ -32,7 +32,11 @@ export function readReplay(path: string): { offset: number; event: LBEvent }[] {
     const offset = input.t_ms === undefined ? index * 1000 : z.number().int().nonnegative().max(86_400_000).parse(input.t_ms);
     if (offset < previous) throw new Error(`Replay offsets out of order at line ${lineNumber}`);
     previous = offset;
-    const event = eventSchema.parse({ ...input, id: input.id ?? `replay:${index}`, ts, channelId: input.channelId ?? 'replay', source: 'replay' });
+    // Identity also fails closed: npm run record always writes the real event id and channel id,
+    // so a line without them is not a recording and the loader will not invent placeholders.
+    if (typeof input.id !== 'string' || !input.id) throw new Error(`Replay event at line ${lineNumber} is missing its event id`);
+    if (typeof input.channelId !== 'string' || !input.channelId) throw new Error(`Replay event at line ${lineNumber} is missing channelId`);
+    const event = eventSchema.parse({ ...input, ts, source: 'replay' });
     if (seen.has(event.id)) throw new Error(`Duplicate replay event at line ${lineNumber}`);
     seen.add(event.id); return { offset, event };
   });

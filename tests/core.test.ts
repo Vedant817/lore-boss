@@ -17,6 +17,7 @@ describe('deterministic boss reducer', () => {
   it('defeats at zero', () => expect(reduce(fight(3), { type: 'attack', user: 'Viewer' }).phase).toBe('defeated'));
   it('heals capped at max', () => expect(reduce(fight(), { type: 'heal', user: 'Viewer' }).hp).toBe(100));
   it('heals five', () => expect(reduce(reduce(fight(), { type: 'attack', user: 'V' }), { type: 'heal', user: 'V' }).hp).toBe(95));
+  it('a heal at full HP is a no-op that returns the same state', () => { const state = fight(); expect(reduce(state, { type: 'heal', user: 'V' })).toBe(state); });
   it('heals do not credit damage', () => expect(reduce(fight(), { type: 'heal', user: 'V' }).damageByUser).toEqual({}));
   it('bits deal double damage', () => expect(reduce(fight(), { type: 'cheer', user: 'V', bits: 2 }).hp).toBe(96));
   it('bits damage is capped at 100', () => expect(reduce(fight(200), { type: 'cheer', user: 'V', bits: 99999 }).hp).toBe(100));

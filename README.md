@@ -40,7 +40,7 @@ Repeat the attack line until the boss falls to see the defeat/MVP screen. Each v
 
 ## How Codex was used
 
-Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`). Codex turned the project brief into a spec, architecture and milestone plan ([SPEC.md](SPEC.md), [ARCHITECTURE.md](ARCHITECTURE.md), [MILESTONES.md](MILESTONES.md)). It implemented the core: Twitch OAuth/EventSub/Helix, the deterministic boss reducer, the evidence-checked LLM extraction pipeline and the app wiring. Codex wrote guardrails ([guardrails/](guardrails/)) and scoped task cards ([orchestration/cards/](orchestration/cards/)) for smaller UI/doc/review iterations. It delegated those to other coding agents, reviewed their diffs and ran the gates (typecheck, lint, 133 unit tests, 32 Playwright browser tests, CI on Windows/Linux × Node 22/24). The full build record, including which model did which card, is in [CODEX_LOG.md](CODEX_LOG.md).
+Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`). Codex turned the project brief into a spec, architecture and milestone plan ([SPEC.md](SPEC.md), [ARCHITECTURE.md](ARCHITECTURE.md), [MILESTONES.md](MILESTONES.md)). It implemented the core: Twitch OAuth/EventSub/Helix, the deterministic boss reducer, the evidence-checked LLM extraction pipeline and the app wiring. Codex wrote guardrails ([guardrails/](guardrails/)) and scoped task cards ([orchestration/cards/](orchestration/cards/)) for smaller UI/doc/review iterations. It delegated those to other coding agents, reviewed their diffs and ran the gates (typecheck, lint, 138 unit tests, 32 Playwright browser tests, CI on Windows/Linux × Node 22/24). The full build record, including which model did which card, is in [CODEX_LOG.md](CODEX_LOG.md).
 
 ## Run it
 
@@ -63,7 +63,7 @@ First boot creates an ignored .env containing a random MOD_TOKEN. Open that file
 6. Open Queue, expand View evidence to inspect stored chat lines and any missing IDs, then approve, edit-and-approve or reject pending items. Evidence is private and scoped to the active session. Reviewed items are immutable. Only approved lore in the active session reaches public output. Enter your intended max HP and spawn the boss.
 7. Add `http://localhost:<PORT>/overlay-view` to OBS as a 1920 x 1080 Browser Source. Background is transparent. `!attack` deals 10 damage; `!heal` restores 5 boss HP, capped at max. Commands share a one-second cooldown per viewer. Bits deal twice their amount, capped at 100 per event. Anonymous Bits never invent an MVP identity. MVPs use actual damage capped by remaining HP.
 
-`!lore` sends an approved lore item through Twitch chat, rate-limited per viewer. Boss names are truncated approved text; attacks use approved text verbatim. Raid recaps are explicitly labeled templates, not claimed as LLM-generated prose.
+`!lore` replies in Twitch chat with the session's approved lore, rotating through the items, rate-limited per viewer. Boss names are truncated approved text; attacks use approved text verbatim. Raid recaps are explicitly labeled templates, not claimed as LLM-generated prose.
 
 ## Recording, replay and privacy
 
