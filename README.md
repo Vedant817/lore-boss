@@ -1,8 +1,40 @@
 # Lore Boss
 
-Community lore becomes a Twitch raid boss. Chat provides evidence, an LLM proposes lore, a moderator approves it, and viewers fight the approved story with `!attack`, `!heal`, and Bits. Incoming raids receive a labeled recap assembled from approved lore.
+**Your chat's inside jokes become a boss your whole community fights.**
 
-Public repository: https://github.com/Vedant817/lore-boss.
+Lore Boss listens to Twitch chat (EventSub), uses an LLM to propose recurring community lore (catchphrases, rivalries, legendary moments, quotes), and shows each proposal to a moderator *with the exact chat messages that support it*. Approved lore becomes a raid boss in a transparent OBS browser-source overlay. Viewers fight it with `!attack` and `!heal`, Bits land capped critical hits, the defeat screen crowns MVPs, and an incoming raid gets a "previously on…" recap built from approved lore.
+
+- Built for: Twitch streamers and their communities (chat + EventSub + Helix chat + OBS overlay).
+- Built with: OpenAI Codex. Main Codex session ID: `01a17213-bdd6-76b0-ad36-6c8f9841a293`.
+- Stack: TypeScript (strict), Node 22+, Fastify, ws, SQLite (better-sqlite3), zod, plain browser UI.
+
+## For judges: try it in 2 minutes, no Twitch or LLM keys needed
+
+This starts an isolated, clearly labeled **synthetic REPLAY fixture**: in-memory data with three seeded pending lore items. It never connects to Twitch or an LLM, so you see the real moderation UI, real combat reducer and real overlay without registering anything.
+
+```powershell
+npm ci
+npm run fixture        # http://localhost:3107 (set LB_BROWSER_PORT to change)
+```
+
+1. Open http://localhost:3107. Unlock with the public, fixture-only token `test-moderator-token-0123456789`.
+2. **Queue**: open *View evidence*, then **Approve** "The banana council has spoken" (or Edit and approve it). Spawn the boss with 100 HP.
+3. Open http://localhost:3107/overlay-view in a second window. This is exactly what OBS renders.
+4. Make "chat" fight. Each command goes through the same reducer that live EventSub chat uses:
+
+```powershell
+$h = @{ Authorization = 'Bearer test-moderator-token-0123456789' }
+$api = 'http://localhost:3107/api'
+foreach ($v in 'ana','bo','cy') { Invoke-RestMethod -Method Post "$api/test-command" -Headers $h -ContentType 'application/json' -Body (@{ user = $v; command = '!attack' } | ConvertTo-Json) }
+Invoke-RestMethod -Method Post "$api/test-command" -Headers $h -ContentType 'application/json' -Body '{"user":"dee","command":"!heal"}'
+Invoke-RestMethod -Method Post "$api/test-raid" -Headers $h -ContentType 'application/json' -Body '{"raider":"FriendlyStreamer","viewers":42}'
+```
+
+Repeat the attack line until the boss falls to see the defeat/MVP screen. Each viewer has a one-second cooldown. The fixture's test-only routes do not exist in the production server. For the real Twitch flow, follow **Run it** below.
+
+## How Codex was used
+
+Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`). Codex turned the project brief into a spec, architecture and milestone plan ([SPEC.md](SPEC.md), [ARCHITECTURE.md](ARCHITECTURE.md), [MILESTONES.md](MILESTONES.md)). It implemented the core: Twitch OAuth/EventSub/Helix, the deterministic boss reducer, the evidence-checked LLM extraction pipeline and the app wiring. Codex wrote guardrails ([guardrails/](guardrails/)) and scoped task cards ([orchestration/cards/](orchestration/cards/)) for smaller UI/doc/review iterations. It delegated those to other coding agents, reviewed their diffs and ran the gates (typecheck, lint, 131 unit tests, 32 Playwright browser tests, CI on Windows/Linux × Node 22/24). The full build record, including which model did which card, is in [CODEX_LOG.md](CODEX_LOG.md).
 
 ## Run it
 
@@ -65,10 +97,11 @@ Run a saved test with `testsprite test run <id> --local 3109 --local-host 127.0.
 
 GitHub Actions verifies Node 22/24 on Windows/Linux, including browser checks. See [remaining acceptance](docs/REMAINING_ACCEPTANCE.md), [actual local OBS checks](docs/OBS_ACCEPTANCE.md), and the [labeled preview recorder](docs/PREVIEW_RECORDING.md). Hosted CI conclusions are recorded separately from local gates.
 
-## Judge rehearsal and remaining evidence
+## What has been verified on Twitch
 
-- All live results are from **one broadcaster's rehearsal on 2026-10-25** — a single channel, not a multi-viewer streamed playtest. Actual Twitch OAuth/subscriptions, incoming chat, real Groq extraction, evidence review, approval, spawning, attack/heal/defeat, reload and outgoing approved-lore reply passed within that single-broadcaster scope. A real incoming raid, paid Bits and a 2–3 viewer stream remain open. See [judge rehearsal results and presentation steps](docs/JUDGE_REHEARSAL.md).
-- Actual Twitch-connected stream acceptance. Twitch CLI simulations and local OBS browser-source rendering have been checked separately and are labeled as such. Live Bits require a suitable channel.
-- A consensual live session with 2–3 viewers, real recording/footage, public video URL, and final Devpost submission. The public repository and main Codex session ID are recorded.
+- **Live on Twitch, on the owner's own channel (2026-10-25 and 2026-10-29):** OAuth, EventSub chat subscription, real incoming chat, Groq extraction, evidence review, approval, spawning, `!attack`/`!heal`, defeat/MVP, reload survival and the outgoing `!lore` chat reply.
+- **Simulated with the official Twitch CLI (labeled as simulation):** Bits cheers and an incoming raid, sent through the production normalization path. Real paid Bits and a real incoming raid have not happened on the test channel.
+- **OBS:** rendered as a 1920×1080 browser source in OBS 32.
+- **Not yet done:** a multi-viewer public stream. See [docs/JUDGE_REHEARSAL.md](docs/JUDGE_REHEARSAL.md) and [docs/REMAINING_ACCEPTANCE.md](docs/REMAINING_ACCEPTANCE.md) for receipts.
 
-See SPEC.md, ARCHITECTURE.md, DESIGN.md, MILESTONES.md, guardrails/, ORCHESTRATION.md and orchestration/cards/ for the brief, contracts and build records. Designs use the supplied screenshots/tokens. Verify starter hackathon dates/rules against the official event before submitting.
+More detail: [SPEC.md](SPEC.md) (brief), [ARCHITECTURE.md](ARCHITECTURE.md), [DESIGN.md](DESIGN.md), [MILESTONES.md](MILESTONES.md), [guardrails/](guardrails/), [ORCHESTRATION.md](ORCHESTRATION.md) and [orchestration/cards/](orchestration/cards/).

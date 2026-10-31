@@ -1,6 +1,6 @@
 import { it, expect, vi, afterEach } from 'vitest';
 import { validateCandidates, LoreService } from '../src/lore/service.js';
-import { LlmClient, validateLlmUrl } from '../src/llm/client.js';
+import { HTTP_400_MESSAGE, LlmClient, validateLlmUrl } from '../src/llm/client.js';
 import { Store } from '../src/db/store.js';
 import { chat } from './helpers.js';
 const buffer = [chat(), chat({ id: 'm2' })];
@@ -96,3 +96,13 @@ it('LLM client reports a timeout when the request is aborted, with no prompt or 
 it('LLM client does not retry authentication failures', async () => { const request = vi.fn<typeof fetch>().mockResolvedValue(new Response('', { status: 401 })); await expect(new LlmClient('https://api.groq.com/openai/v1', 'test-model', 'secret', request).json('JSON', {})).rejects.toThrow('401'); expect(request).toHaveBeenCalledTimes(1); });
 it('LLM endpoint selection never silently routes to other providers', () => { expect(() => validateLlmUrl('https://api.openai.com/v1')).toThrow(); expect(() => validateLlmUrl('http://api.x.ai/v1')).toThrow(); expect(() => validateLlmUrl('https://foo.modal.run/v1')).not.toThrow(); });
 it('purge invalidates in-flight extraction', async () => { const store = new Store(':memory:'); store.startSession('s', 'live', 'c'); let release!: (v: Response) => void; const request = vi.fn<typeof fetch>().mockImplementation(() => new Promise(resolve => { release = resolve; })); const service = new LoreService(store, () => new LlmClient('http://localhost:8080/v1', 'test', '', request), () => 's', []); buffer.forEach(m => service.add(m)); const extraction = service.extract(); service.clear(); release(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ candidates: [item] }) } }] }))); expect(await extraction).toEqual([]); expect(store.listLore()).toEqual([]); store.close(); });
+it('LLM client explains an HTTP 400 without reading the provider body or resending', async () => {
+  const body = vi.fn(async () => '{"error":{"message":"provider detail"}}');
+  const response = new Response('{"error":{"message":"provider detail"}}', { status: 400 }); response.text = body;
+  const request = vi.fn<typeof fetch>().mockResolvedValue(response);
+  const failure = new LlmClient('https://api.groq.com/openai/v1', 'test-model', 'secret', request).json('JSON', {});
+  await expect(failure).rejects.toThrow(HTTP_400_MESSAGE);
+  await expect(failure).rejects.not.toThrow('provider detail');
+  expect(body).not.toHaveBeenCalled();
+  expect(request).toHaveBeenCalledTimes(1);
+});

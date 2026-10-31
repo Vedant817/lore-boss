@@ -1,4 +1,8 @@
 import { z } from 'zod';
+// docs: https://console.groq.com/docs/structured-outputs ("JSON Object Mode ... Can error: Occasionally").
+// The provider body is never read or echoed; only the status is classified. Callers keep their
+// chat buffer, so the scheduled 60-second extraction retries without this client resending.
+export const HTTP_400_MESSAGE = 'LLM returned HTTP 400; no lore was created. JSON mode occasionally rejects a generation, and the next extraction retries automatically. If it repeats, use Check inference.';
 export class LlmClient {
   constructor(readonly baseUrl: string, readonly model: string, private readonly apiKey: string, private readonly request: typeof fetch = fetch) {}
   get configured(): boolean {
@@ -22,7 +26,7 @@ export class LlmClient {
       // eslint-disable-next-line preserve-caught-error -- raw transport exceptions can carry provider bodies or secrets; only the safe class is surfaced.
       throw new Error(isAbortError(error) ? 'LLM request timed out after 5s' : 'LLM network request failed');
     }
-    if (!response.ok) throw new Error(`LLM returned HTTP ${response.status}`);
+    if (!response.ok) throw new Error(response.status === 400 ? HTTP_400_MESSAGE : `LLM returned HTTP ${response.status}`);
     let payload: unknown;
     try { payload = await response.json(); } catch { throw new Error('LLM returned an invalid response shape'); }
     const parsed = z.object({ choices: z.array(z.object({ message: z.object({ content: z.string().max(100_000) }) })).min(1) }).safeParse(payload);

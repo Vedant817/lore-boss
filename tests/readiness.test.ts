@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app.js';
 import { Runtime } from '../src/runtime.js';
-import { LlmClient } from '../src/llm/client.js';
+import { HTTP_400_MESSAGE, LlmClient } from '../src/llm/client.js';
 import { probeInference } from '../src/llm/probe.js';
 import { saveEnv } from '../src/config.js';
 import { chat, config } from './helpers.js';
@@ -51,7 +51,7 @@ describe('readiness and inference probe', () => {
         .mockImplementation(reply('{"candidates":[]}'));
       runtime.llm = new LlmClient('http://localhost:8080/v1', 'test-model', '', request);
       await vi.advanceTimersByTimeAsync(60_000);
-      expect(runtime.health().error).toBe('LLM returned HTTP 400');
+      expect(runtime.health().error).toBe(HTTP_400_MESSAGE);
       const recovered = await app.inject({ method: 'POST', url: '/api/extract', headers });
       expect(recovered.statusCode).toBe(200);
       expect(runtime.health().error).toBeNull();

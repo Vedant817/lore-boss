@@ -16,7 +16,8 @@
     "record": "tsx src/record.ts",
     "start": "node dist/src/index.js",
     "replay": "tsx src/replay.ts",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "fixture": "tsx tests/browser/server.ts"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",

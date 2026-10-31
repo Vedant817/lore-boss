@@ -1,39 +1,84 @@
-# DEVPOST SUBMISSION — local implementation draft
+# Devpost submission: copy-paste text
 
-**Name:** Lore Boss
-**Tagline:** Your chat's inside jokes become a boss your whole community fights.
-**Category:** Select from the actual event form after verifying current rules.
+Event: Codex x TwitchCon Hackathon (twitchcon-codex.devpost.com). Submissions close **Nov 2, 2026, 2:00 PM Pacific (22:00 UTC, Nov 3 03:30 IST)**. Save a draft early; drafts can be edited until the deadline.
+
+| Field | Value |
+|---|---|
+| Project name | Lore Boss |
+| Tagline | Your chat's inside jokes become a boss your whole community fights. |
+| Repository | https://github.com/Vedant817/lore-boss |
+| Codex session ID | `01a17213-bdd6-76b0-ad36-6c8f9841a293` |
+| Video | *YouTube URL (public, under 3 minutes): paste after upload* |
+| Built with | typescript, node.js, fastify, websockets, sqlite, zod, twitch-api, twitch-eventsub, obs, groq, openai-codex |
+
+---
+
+## Inspiration
+
+Every Twitch community has lore: the catchphrase that won't die, the rivalry between two regulars, the moment everyone still references months later. It lives only in chat scrollback and in the memories of people who were there. We wanted a way for a stream to *play with* its own history. It also had to stay safe: nothing about real people should hit the screen without a moderator saying yes.
 
 ## What it does
 
-Lore Boss extracts lore proposals from public Twitch chat, checks their evidence, and lets a moderator approve, edit or reject them. Approved lore becomes a deterministic raid boss in a transparent OBS browser overlay. Viewers attack/heal with chat commands, Bits cause capped critical damage, and incoming raids get a labeled recap assembled from approved lore.
+Lore Boss turns a community's own chat history into a boss fight.
 
-## How we built it
+1. **Listens to chat.** It connects to the broadcaster's channel through Twitch OAuth and EventSub (`channel.chat.message`, Bits and raid events).
+2. **Proposes lore with evidence.** Every 60 seconds (or on demand) an LLM reads recent public chat and proposes up to five lore items: catchphrases, rivalries, moments or quotes. Each must cite at least two real chat message IDs, and quotes must be verbatim substrings. Anything unsupported, blocked or malformed is dropped. No lore is ever invented.
+3. **Moderator stays in control.** Proposals go to a private queue. The moderator sees the exact supporting chat lines and approves, edits or rejects each one. Nothing reaches the stream until it is approved.
+4. **Spawns a boss.** Approved lore becomes a raid boss in a transparent 1920×1080 OBS browser-source overlay. Its name and attacks are the community's own approved lore.
+5. **Chat fights back.** `!attack` deals 10, `!heal` restores 5, and Bits land critical hits (2× Bits, capped at 100). Commands have a per-viewer cooldown, and duplicate events are suppressed. The defeat screen ranks MVPs by actual damage.
+6. **Raids get a recap.** An incoming raid triggers a labeled "previously on…" recap built from approved lore. `!lore` replies in chat with an approved item.
 
-Codex was the main build thread and orchestrator and authored the core system (EventSub/OAuth, the deterministic reducer, the validated LLM pipeline and the app/integration wiring). Main session ID: **01a17213-bdd6-76b0-ad36-6c8f9841a293**. Codex wrote scoped task cards and reviewed diffs; it ran the local gates.
+## How we built it (how we used Codex)
 
-The current codebase also includes a later iteration of documents, example schemas, the operator UI and the overlay that were **authored by delegated models under Codex orchestration**, not by Codex itself. Scoped OpenCode implementation/review used **opencode/deepseek-v4.1-flash-free** and **opencode/glm-5.3-flash-free**; implementer and reviewer models always differed. When those free routes later failed at provider quota, the user explicitly selected the connected Modal endpoints, and DeepSeek/GLM completed the scoped iteration/repair cards and five independent cross-reviews over those approved endpoints, with root applying narrow repairs (dispositions in docs/reviews/FINAL_REVIEW.md). None of this changes the recorded main Codex session ID above — the core build thread is unchanged. The scoped implementation/review cards are recorded in CODEX_LOG.md. The product supports explicitly configured Groq, Modal or a local compatible inference endpoint. During the 2026-10-25 single-broadcaster rehearsal, a Groq key was saved privately through the settings route (never committed, logged or pasted into chat), and live Groq inference returned a verified readiness response plus one evidenced extraction candidate; no claim is made beyond that rehearsal.
+Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`). Starting from a written brief, Codex:
 
-Stack: TypeScript strict, Node, Fastify, ws, SQLite/better-sqlite3, zod, plain browser UI, Twitch EventSub/Helix and an OBS browser source. No OpenAI cloud API key was created.
+- turned the brief into a spec, architecture, milestone plan, design system (from supplied reference screenshots) and **guardrails** (no hallucinated APIs, so every external call cites its official doc URL; no fake data; replay must be a labeled flag; tests required);
+- implemented the core itself: Twitch OAuth with identity/scope validation, the EventSub WebSocket client with reconnect and durable de-duplication, the **pure deterministic boss reducer**, the evidence-checked LLM extraction pipeline (zod-validated, prompt-injection-aware) and the Fastify app wiring;
+- wrote scoped task cards for smaller UI, docs and review iterations, delegated them to other coding agents, reviewed their diffs and kept implementer and reviewer models distinct;
+- ran the gates on every change: TypeScript strict typecheck, ESLint, 131 Vitest unit tests, 32 Playwright browser tests, plus GitHub Actions on Windows and Linux × Node 22/24.
 
-## Challenges and accomplishments
+The full card-by-card record is in `CODEX_LOG.md`.
 
-Kept lore private until moderation, checked evidence IDs/quote substrings, made combat deterministic, protected local operator actions, canceled in-flight authorization/extraction after disconnect or purge, preserved socket ownership during reconnect, and suppressed duplicate delivery durably. Browser verification caught hidden-view CSS and stale moderation controls; both were corrected. TestSprite reported passes while omitting assertion steps, so those verdicts were qualified rather than treated as full proof.
+Stack: TypeScript (strict), Node 22+, Fastify, ws, SQLite via better-sqlite3, zod, a plain-JS operator UI and overlay, Twitch EventSub/Helix, OBS browser source. Inference uses any OpenAI-compatible endpoint the streamer configures; we tested Groq (`openai/gpt-oss-20b`).
 
-Local evidence: 105 unit tests and 4 browser tests at that rehearsal baseline, later raised by the final root iteration gates to **129 unit tests in 11 files and 32 browser tests** with typecheck, lint, build and guardrails; captured official Twitch CLI cheer/raid simulations; local OBS browser-source rendering. Hosted CI on commit a1dfedb: [run 40206743140](https://github.com/Vedant817/lore-boss/actions/runs/40206743140) concluded SUCCESS on all four windows-2022/Ubuntu × Node 22/24 jobs (root-verified 2026-10-28); earlier runs remain historical receipts in CODEX_LOG.md. Actual one-broadcaster Twitch/Groq rehearsal also passed on 2026-10-25: real incoming chat, extraction, evidence review/approval, spawning, attacks/healing, defeat/MVP, reload and approved-lore reply — all within a single broadcaster's channel. This does not establish a multi-viewer stream, real Bits or incoming raid. A continuously labeled synthetic preview remains a separate review asset. Independent OpenCode reviews cover core, UI, readiness and CI. The single review that failed at the provider's free quota was superseded by the user-approved Modal review pass described above; that original failure is still recorded in CODEX_LOG.md and is not retroactively claimed as a PASS.
+## Challenges we ran into
 
-## What we learned / next
+- **Keeping an LLM honest about real people.** We solved it structurally rather than by prompting alone: every candidate must cite real message IDs, quotes must be exact substrings, blocked terms are filtered, and a human approves everything.
+- **Real-time correctness.** EventSub can redeliver events, sockets reconnect, and moderators can purge mid-extraction. We used a deterministic reducer, durable event de-duplication and generation counters, so in-flight work is cancelled after a disconnect or purge.
+- **Provider quirks.** JSON-mode inference occasionally rejects a generation. The app now reports a plain-language status, keeps the chat buffer and retries on the next cycle, without double-sending.
 
-A real-time overlay needs a deterministic core and explicit lifecycle ownership. Evidence, moderation and honest replay labeling matter more than making a demo appear live. Closed since this draft was started: account-owner Twitch/Groq setup and a real Groq extraction, both inside the 2026-10-25 single-broadcaster rehearsal, and the public repository itself. Next: a consensual multi-viewer playtest (with real Bits/raid footage only if it actually occurs), the final stream/OBS recording, the public YouTube video, then Devpost owner answers, rules acknowledgment and final submission.
+## Accomplishments that we're proud of
 
-## Required items
+- It works on real Twitch: OAuth, EventSub chat, extraction, evidence review, approval, combat, defeat and `!lore` replies were verified live on the owner's channel.
+- The combat core is a pure function, so a fight replays identically from a recording, and replay mode is always visibly labeled.
+- Privacy by default: lore stays private until approved, ended-session chat is deleted after 24 hours, and one button purges everything.
 
-- Public repository URL: https://github.com/Vedant817/lore-boss.
-- Local demo candidate completed and reviewed on 2026-10-29 IST: **114.12 seconds, 1920×1080 H.264**, real owner-channel Twitch evidence/moderation/combat, labeled CLI simulation and recorded Codex build artifacts. Durable handoff: the owner's Videos folder, `LoreBoss-final-2026-10-29/LoreBoss-demo.mp4`, with screenshots, description, captions and ZIP. It remains a review copy, not uploaded to YouTube. The owner handles publication and Devpost submission.
-- Main Codex session ID: 01a17213-bdd6-76b0-ad36-6c8f9841a293.
-- Judge instructions: README.md.
-- Any simulated footage must display replay/simulation labels.
-- Official deadline (Devpost MCP fetch by root, 2026-10-28): submissions close **2026-11-02 22:00 UTC = 2026-11-03 03:30 IST** (source: twitchcon-codex.devpost.com). The plan's earlier "Nov 2, 11 PM IST" marker was an internal conservative target that was always ahead of this official close; no deadline change by the organizer is claimed. Category: choose from the live event form at submission time.
-- Official requirements (same fetch): a max-3-minute video showing the project working on Twitch and how Codex was used, published public on YouTube; the public repo URL; a project description; the main Codex session ID. Form fields 29286–29296 (submitter type, country, repo URL, session ID, technology explanation, community use, personal feedback, and the age/jurisdiction/non-employee attestations) are owner-only and remain unanswered; this document invents none of them.
-- Gating: no Devpost registration or rules acknowledgment has been performed, and `.devpost-hackathon-state.json` is absent, so the formal prepare-submission workflow remains gated until the owner completes those steps.
-- Final submission: not performed. This remains the pre-existing local implementation draft — no remote draft or materially-ready submission is claimed.
+## What we learned
+
+A live overlay needs a deterministic core and explicit lifecycle ownership. For AI features that touch real communities, evidence and moderator control matter more than clever generation.
+
+## What's next
+
+A multi-viewer playtest on a live stream with real Bits and raids, optional generated boss portraits and sound, and packaging as a Twitch Extension so streamers don't need to run a local server.
+
+---
+
+## Testing instructions (paste into the "testing" / "how to run" field)
+
+No Twitch or LLM credentials are needed to try it:
+
+```
+git clone https://github.com/Vedant817/lore-boss && cd lore-boss
+npm ci
+npm run fixture
+```
+
+Open http://localhost:3107 and unlock with the public fixture-only token `test-moderator-token-0123456789`. Approve a lore item, spawn the boss, open http://localhost:3107/overlay-view, then send attacks with the PowerShell snippet in the README ("For judges"). For the real Twitch flow, follow the README's "Run it": register a Twitch app, connect, configure Groq, chat, approve, spawn and add `/overlay-view` to OBS.
+
+---
+
+## Owner checklist (not part of the submission text)
+
+1. Upload the final video to YouTube as **Public** (not Unlisted/Private), under 3:00, then paste the URL above and in the form.
+2. Fill the owner-only form fields: submitter type, country, and the age/eligibility attestations. Only you can answer these.
+3. Paste the sections above, add 3–5 screenshots (overlay fight, evidence queue, defeat/MVP), then submit before the deadline.
