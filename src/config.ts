@@ -11,11 +11,14 @@ const schema = z.object({
   LB_REPLAY_FILE: z.string().default(''), DATABASE_PATH: z.string().default('./data/loreboss.db'),
   MOD_TOKEN: z.string().min(24), TWITCH_CLIENT_ID: z.string().default(''),
   TWITCH_CLIENT_SECRET: z.string().default(''),
-  TWITCH_REDIRECT_URI: z.string().url().default('http://localhost:3000/auth/callback'),
+  TWITCH_REDIRECT_URI: z.string().url().optional(),
   LLM_BASE_URL: z.string().default(''), LLM_MODEL: z.string().default(''), LLM_API_KEY: z.string().default(''),
   LB_BLOCKED_WORDS: z.string().default(''), LB_RECORD_FILE: z.string().default(''),
 });
-export type Config = z.infer<typeof schema>;
+export type Config = Omit<z.infer<typeof schema>, 'TWITCH_REDIRECT_URI'> & { TWITCH_REDIRECT_URI: string };
+export function redirectFor(port: number, configured: string | undefined): string {
+  return configured ?? `http://localhost:${port}/auth/callback`;
+}
 export function loadConfig(): Config {
   loadEnv({ quiet: true });
   if (!process.env.MOD_TOKEN) {
@@ -23,7 +26,9 @@ export function loadConfig(): Config {
     values.MOD_TOKEN = randomBytes(32).toString('hex');
     saveEnv(values); process.env.MOD_TOKEN = values.MOD_TOKEN;
   }
-  const cfg = schema.parse(process.env);
+  const parsed = schema.parse(process.env);
+  // Unset redirect follows PORT, so changing PORT alone stays consistent with the registered Twitch redirect.
+  const cfg: Config = { ...parsed, TWITCH_REDIRECT_URI: redirectFor(parsed.PORT, parsed.TWITCH_REDIRECT_URI) };
   const redirect = new URL(cfg.TWITCH_REDIRECT_URI);
   if (redirect.protocol !== 'http:' || redirect.hostname !== 'localhost' || Number(redirect.port || 80) !== cfg.PORT || redirect.pathname !== '/auth/callback') throw new Error('Twitch redirect must be http://localhost:<PORT>/auth/callback');
   if (cfg.LB_SOURCE === 'replay' && !cfg.LB_REPLAY_FILE) throw new Error('Replay requires LB_REPLAY_FILE');

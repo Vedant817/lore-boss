@@ -35,7 +35,7 @@ Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`)
 - turned the brief into a spec, architecture, milestone plan, design system (from supplied reference screenshots) and **guardrails** (no hallucinated APIs, so every external call cites its official doc URL; no fake data; replay must be a labeled flag; tests required);
 - implemented the core itself: Twitch OAuth with identity/scope validation, the EventSub WebSocket client with reconnect and durable de-duplication, the **pure deterministic boss reducer**, the evidence-checked LLM extraction pipeline (zod-validated, prompt-injection-aware) and the Fastify app wiring;
 - wrote scoped task cards for smaller UI, docs and review iterations, delegated them to other coding agents, reviewed their diffs and kept implementer and reviewer models distinct;
-- ran the gates on every change: TypeScript strict typecheck, ESLint, 131 Vitest unit tests, 32 Playwright browser tests, plus GitHub Actions on Windows and Linux × Node 22/24.
+- ran the gates on every change: TypeScript strict typecheck, ESLint, 133 Vitest unit tests, 32 Playwright browser tests, plus GitHub Actions on Windows and Linux × Node 22/24.
 
 The full card-by-card record is in `CODEX_LOG.md`.
 
@@ -79,6 +79,6 @@ Open http://localhost:3107 and unlock with the public fixture-only token `test-m
 
 ## Owner checklist (not part of the submission text)
 
-1. Upload the final video to YouTube as **Public** (not Unlisted/Private), under 3:00, then paste the URL above and in the form.
+1. Upload `Videos/LoreBoss-final-2026-11-01/LoreBoss-demo.mp4` (2:11) to YouTube as **Public**, not Unlisted or Private, using the title, description and chapters in that folder's `description.md` (optionally `captions.srt` as CC). Paste the URL above and in the form. Do not upload the older 2026-10-29 review copy.
 2. Fill the owner-only form fields: submitter type, country, and the age/eligibility attestations. Only you can answer these.
 3. Paste the sections above, add 3–5 screenshots (overlay fight, evidence queue, defeat/MVP), then submit before the deadline.
