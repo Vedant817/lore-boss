@@ -451,6 +451,9 @@ a { color: var(--lb-primary-hi); }
 
 .hall-sub { font: var(--lb-h2-28); font-size: 18px; margin: var(--lb-sp-6) 0 var(--lb-sp-2); }
 .hall-table { width: 100%; border-collapse: collapse; }
+/* Keep wide statistics scrollable inside the card instead of widening the entire phone page. */
+#view-hall, #view-hall > .card { min-width: 0; }
+#hall-fighters { min-width: 0; overflow-x: auto; }
 .hall-table th, .hall-table td { text-align: left; padding: var(--lb-sp-2) var(--lb-sp-3); border-bottom: 1px solid var(--lb-surface2); }
 .hall-table th { font: var(--lb-caption-13); color: var(--lb-muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .hall-list { padding-left: 20px; }

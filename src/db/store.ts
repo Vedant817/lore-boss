@@ -379,7 +379,9 @@ export class Store {
     if (startedAt === null) fail('boss state has no startedAt');
     if (!Number.isInteger(state.maxHp) || state.maxHp <= 0) fail('boss maxHp must be a positive integer');
     const loreIds = state.attackPool.map((attack) => requireText(attack.loreId, 'attack loreId'));
-    const defeatedAt = state.phase === 'defeated' ? new Date().toISOString() : null;
+    // Runtime duration follows the game clock, including replay clock advancement.
+    const finishedAt = state.durationMs === undefined ? Date.now() : Date.parse(startedAt) + state.durationMs;
+    const defeatedAt = state.phase === 'defeated' ? new Date(finishedAt).toISOString() : null;
 
     this.db
       .prepare(

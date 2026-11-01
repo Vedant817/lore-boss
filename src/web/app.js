@@ -423,7 +423,7 @@
     const unarm = () => { if (state.purgeTimer) { clearTimeout(state.purgeTimer); state.purgeTimer = 0; } renderPurge(); };
     if (state.purgeTimer) {
       zone.replaceChildren(
-        el('span', { class: 'caption', text: 'Erase every stored chat, lore and boss data from this session?' }),
+        el('span', { class: 'caption', text: 'Permanently erase all stored chats, lore, fights and Hall of Fame history across live and replay sessions, and disconnect Twitch?' }),
         el('button', { class: 'btn btn-danger', type: 'button', text: 'Confirm purge', onclick: () => { unarm(); doPurge(); } }),
         el('button', { class: 'btn', type: 'button', text: 'Keep', onclick: unarm }),
       );
