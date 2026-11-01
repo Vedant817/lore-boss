@@ -395,7 +395,11 @@
       note('Extraction finished — queue updated.', 'success');
       await loadStatus();
     } catch (err) {
-      fail(err, 'Extraction failed');
+      if (err.status === 409 && err.message === 'Lore extraction already running') {
+        note('Lore extraction is already in progress. Check the queue shortly.', 'info');
+      } else {
+        fail(err, 'Extraction failed');
+      }
     } finally {
       setBusy(false);
     }

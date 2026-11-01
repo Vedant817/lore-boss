@@ -46,6 +46,33 @@ test('gate rejects invalid token and stays usable on mobile', async ({ page }) =
   await page.setViewportSize({ width: 390, height: 844 }); await page.goto('/'); await page.getByLabel('Mod token', { exact: true }).fill('invalid'); await page.getByRole('button', { name: 'Unlock', exact: true }).click(); await expect(page.locator('#gate-error')).toContainText('Token rejected');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
 });
+
+test('concurrent extraction is informational while other conflicts remain errors', async ({ page }) => {
+  let requests = 0;
+  await page.route('**/api/extract', route => {
+    requests += 1;
+    return route.fulfill({ status: 409, json: { error: requests === 1 ? 'Lore extraction already running' : 'LLM returned HTTP 429' } });
+  });
+  await page.goto('/');
+  await page.getByLabel('Mod token', { exact: true }).fill(token);
+  await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  const extract = page.getByRole('button', { name: 'Extract lore now', exact: true });
+  await extract.click();
+  await expect(page.locator('#banner')).toHaveClass('banner banner-info');
+  await expect(page.locator('#banner')).toContainText('already in progress');
+  await expect(page.locator('#banner')).not.toContainText('failed');
+  await expect(extract).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Refresh status', exact: true })).toBeEnabled();
+  expect(requests).toBe(1);
+  await page.getByRole('link', { name: 'Queue', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Pending (3)', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Setup', exact: true }).click();
+  await extract.click();
+  await expect(page.locator('#banner')).toHaveClass('banner banner-danger');
+  await expect(page.locator('#banner')).toHaveText('Extraction failed: LLM returned HTTP 429');
+  await expect(extract).toBeEnabled();
+  expect(requests).toBe(2);
+});
 test('combat rankings render once and defeated summary survives reload', async ({ page, context, request }) => {
   await page.goto('/'); await page.getByLabel('Mod token', { exact: true }).fill(token); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
   await page.getByRole('link', { name: 'Queue', exact: true }).click(); await page.getByRole('button', { name: 'Approve', exact: true }).first().click();

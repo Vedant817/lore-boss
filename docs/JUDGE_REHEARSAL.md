@@ -1,5 +1,16 @@
 # Judge rehearsal: actual results
 
+## Latest owner-channel walkthrough — 2026-11-01
+
+After the owner reauthorized Twitch, Codex used the actual operator UI and connected live instance on port 3137. This was one broadcaster's rehearsal, **not a multi-viewer study**. Three clearly labeled lore messages and five commands were sent to the owner's channel under the existing posting approval. Official APIs: [Token Validate](https://dev.twitch.tv/docs/authentication/validate-tokens/) and [Send Chat Message](https://dev.twitch.tv/docs/api/reference/#send-chat-message).
+
+- Automatic Groq extraction produced two proposals. The quote's two stored supporting messages matched IDs from the actual owner posts. View evidence and Approve were used through the UI, followed by the real spawn form at 25 HP.
+- The real `!block` stopped a charging strike and stunned the boss. Subsequent `!attack`, `!heal`, `!attack` changed HP **25 → 5 → 10 → 0**, recording 30 damage and the owner's final blow. The fight lasted 1:59; three earlier unblocked strikes and one block appear in its Hall entry. `!stats` produced an actual reply received back into this session's stored chat.
+- The overlay's defeated summary survived reload. Hall navigation and reload preserved the same 1:59 result; at a 390 px viewport, page width remained 390 px. Its 10 defeated bosses / 400 damage are historical totals, not this fight alone. Root inspected evidence, defeat and mobile Hall screenshots in OS-temp `LoreBoss-live-human-20261101`; the ordinary OBS overlay remains transparent, and the supported `?preview` supplies a dark browser backdrop.
+- Found and fixed misleading manual-extraction feedback when the automatic job was already running. That specific conflict now says extraction is in progress; other provider failures remain errors. The regression failed before the change and passed afterward, preserving the queue and re-enabled controls with one request per click.
+
+Current local gates: typecheck, lint, build and guardrails passed; **179 tests in 15 files passed; 36 browser tests passed** on isolated replay port 3185. Twitch/EventSub remained connected with no runtime error after the walkthrough; the live process and OAuth persistence were preserved. Browser automation tabs were closed. No real paid Bits, incoming raid, Channel Points prediction, participant study, updated video, upload or Devpost submission was performed. Predictions correctly report unavailable on this non-Affiliate/non-Partner channel.
+
 Rehearsed on 2026-10-25 using actual Twitch chat and Groq `openai/gpt-oss-20b`. The owner explicitly approved posting labeled rehearsal messages and commands to their channel. This was one broadcaster's chat, not a multi-viewer streamed playtest.
 
 ## Verified live path
