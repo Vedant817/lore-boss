@@ -1,3 +1,4 @@
+import { idle } from '../src/boss/reducer.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Store } from '../src/db/store.js';
 import type { BossState, Candidate, ChatEvent, Source } from '../src/types.js';
@@ -25,6 +26,7 @@ function candidate(body: string, evidence: string[] = ['msg-1']): Candidate {
 
 function bossState(overrides: Partial<BossState> = {}): BossState {
   return {
+    ...idle(),
     phase: 'fight',
     bossId: 'boss-1',
     name: 'The Boss',

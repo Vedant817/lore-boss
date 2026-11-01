@@ -6,12 +6,12 @@ export const eventSchema = z.discriminatedUnion('kind', [
   z.object({ ...base, kind: z.literal('chat'), userId: z.string().min(1), userLogin: z.string().min(1), userName: z.string().min(1), text: z.string().max(2000), badges: z.array(z.string()) }),
   z.object({ ...base, kind: z.literal('cheer'), userId: z.string().nullable(), userName: z.string().nullable(), isAnonymous: z.boolean(), bits: z.number().int().positive().max(1_000_000), message: z.string().max(2000) }),
   z.object({ ...base, kind: z.literal('raid'), fromId: z.string().min(1), fromLogin: z.string().min(1), fromName: z.string().min(1), viewers: z.number().int().nonnegative() }),
-  z.object({ ...base, kind: z.literal('command'), userId: z.string().min(1), userName: z.string().min(1), command: z.enum(['!attack', '!heal', '!lore']), args: z.array(z.string()) }),
+  z.object({ ...base, kind: z.literal('command'), userId: z.string().min(1), userName: z.string().min(1), command: z.enum(['!attack', '!heal', '!lore', '!block', '!stats']), args: z.array(z.string()) }),
 ]);
 export function commandFromChat(event: LBEvent): LBEvent | null {
   if (event.kind !== 'chat') return null;
   const [cmd, ...args] = event.text.trim().split(/\s+/);
-  if (cmd !== '!attack' && cmd !== '!heal' && cmd !== '!lore') return null;
+  if (cmd !== '!attack' && cmd !== '!heal' && cmd !== '!lore' && cmd !== '!block' && cmd !== '!stats') return null;
   return { id: `${event.id}:command`, ts: event.ts, source: event.source, channelId: event.channelId, kind: 'command', userId: event.userId, userName: event.userName, command: cmd, args };
 }
 // Missing per-event ts fails closed: t_ms is only a scheduling offset from the recording start,

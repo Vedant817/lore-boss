@@ -43,6 +43,7 @@ export async function createApp(runtime: Runtime) {
     inference: runtime.llmCheck,
   }));
   app.post('/api/llm/check', () => runtime.checkInference());
+  app.get('/api/hall', () => ({ source: runtime.cfg.LB_SOURCE, ...runtime.store.hallOfFame(runtime.cfg.LB_SOURCE, 10) }));
   app.get('/api/status', () => ({ boss: runtime.boss, lore: runtime.store.listLore().filter(item => item.sessionId === runtime.sessionId), health: runtime.health() }));
   app.get('/api/lore/:id/evidence', (request, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(request.params);
@@ -109,7 +110,7 @@ export async function createApp(runtime: Runtime) {
     reply.header('Set-Cookie', 'lb_oauth=; HttpOnly; SameSite=Lax; Path=/auth/callback; Max-Age=0');
     runtime.connect(); return reply.redirect('/');
   });
-  const files: Record<string, [string, string]> = { '/': ['src/web/index.html', 'text/html'], '/queue': ['src/web/index.html', 'text/html'], '/overlay-view': ['src/overlay/index.html', 'text/html'], '/assets/app.js': ['src/web/app.js', 'text/javascript'], '/assets/overlay.js': ['src/overlay/overlay.js', 'text/javascript'], '/assets/tokens.css': ['src/overlay/tokens.css', 'text/css'] };
+  const files: Record<string, [string, string]> = { '/': ['src/web/index.html', 'text/html'], '/queue': ['src/web/index.html', 'text/html'], '/hall': ['src/web/index.html', 'text/html'], '/overlay-view': ['src/overlay/index.html', 'text/html'], '/assets/app.js': ['src/web/app.js', 'text/javascript'], '/assets/overlay.js': ['src/overlay/overlay.js', 'text/javascript'], '/assets/tokens.css': ['src/overlay/tokens.css', 'text/css'] };
   for (const [route, [file, mime]] of Object.entries(files)) app.get(route, (_request, reply) => reply.type(mime).send(readFileSync(resolve(file))));
   const hub = new WebSocketServer({ noServer: true, maxPayload: 1024 });
   app.server.on('upgrade', (request, socket, head) => {
@@ -119,7 +120,8 @@ export async function createApp(runtime: Runtime) {
   hub.on('connection', ws => {
     ws.on('error', () => ws.terminate());
     ws.send(JSON.stringify({ v: 1, type: 'hello', source: runtime.cfg.LB_SOURCE, build, channel: runtime.channelLogin }));
-    ws.send(JSON.stringify({ v: 1, type: 'boss.state', state: runtime.boss }));
+    ws.send(JSON.stringify({ v: 1, type: 'boss.state', state: runtime.boss, serverNow: runtime.now() }));
+    ws.send(JSON.stringify(runtime.hallMessage()));
     ws.send(JSON.stringify({ v: 1, type: 'lore.ticker', items: runtime.approved().map(({ id, text }) => ({ id, text })) }));
     ws.on('message', raw => { if (raw.toString() !== '{"type":"ack"}') ws.close(1008, 'Only ack is accepted'); });
   });

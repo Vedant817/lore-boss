@@ -13,6 +13,7 @@
       <nav aria-label="Views">
         <a href="/" data-nav="/">Setup</a>
         <a href="/queue" data-nav="/queue">Queue</a>
+        <a href="/hall" data-nav="/hall">Hall of Fame</a>
         <button class="btn btn-quiet" type="button" id="gate-lock" hidden>Lock</button>
       </nav>
     </header>
@@ -58,6 +59,7 @@
             <button class="btn btn-primary" type="submit">Spawn boss</button>
           </form>
           <p id="spawn-hint" class="caption"></p>
+          <p class="caption">Chat commands: <b>!attack</b> (10 damage, +2 for each other viewer who attacked in the last 5 s), <b>!heal</b> (+5 boss HP), <b>!block</b> (stop a charging lore strike), <b>!stats</b> (your all-time record), <b>!lore</b>. The first lore strike charges 15 s after spawn; unblocked strikes heal the boss. The boss enrages at 50% and 25% HP.</p>
           <div class="form-actions">
             <button class="btn" type="button" id="extract">Extract lore now</button>
           </div>
@@ -119,6 +121,20 @@
           </div>
           <p class="caption">Blank fields preserve saved values. Secrets are never prefilled. Choose an exact model ID available at your endpoint.</p>
           <p class="caption">OBS browser source: <a href="/overlay-view">Open overlay</a> · use a 1920 × 1080 canvas.</p>
+        </section>
+      </section>
+
+      <!-- Hall of Fame view (/hall): cross-stream records for the current source only. -->
+      <section id="view-hall" class="stack" aria-labelledby="hall-h" hidden>
+        <section class="card">
+          <div class="card-head"><h2 id="hall-h">Hall of Fame</h2><p id="hall-summary" class="caption" style="margin: 0;"></p></div>
+          <p class="caption">All-time records from every stream for this source. Viewer display names and combat totals stay until you purge.</p>
+          <h3 class="hall-sub">Top fighters</h3>
+          <div id="hall-fighters"></div>
+          <h3 class="hall-sub">Boss history</h3>
+          <div id="hall-bosses"></div>
+          <h3 class="hall-sub">Lore Book</h3>
+          <div id="hall-lore"></div>
         </section>
       </section>
 

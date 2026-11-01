@@ -157,12 +157,17 @@
   }
 
   // ——— Views / views share this index document (server serves / and /queue with it). ———
+  const currentView = () => {
+    const path = location.pathname.replace(/\/+$/, '');
+    return path === '/queue' ? '/queue' : path === '/hall' ? '/hall' : '/';
+  };
   function syncView() {
-    const isQueue = location.pathname.replace(/\/+$/, '') === '/queue';
-    $('view-queue').hidden = !isQueue;
-    $('view-setup').hidden = isQueue;
+    const view = currentView();
+    $('view-queue').hidden = view !== '/queue';
+    $('view-hall').hidden = view !== '/hall';
+    $('view-setup').hidden = view !== '/';
     for (const a of document.querySelectorAll('[data-nav]')) {
-      if (a.getAttribute('data-nav') === (isQueue ? '/queue' : '/')) a.setAttribute('aria-current', 'page');
+      if (a.getAttribute('data-nav') === view) a.setAttribute('aria-current', 'page');
       else a.removeAttribute('aria-current');
     }
   }
@@ -231,6 +236,16 @@
       el('dt', { text: 'AI model' }), el('dd', { text: h.llmConfigured === true ? 'configured' : 'not configured' }),
       el('dt', { text: 'session' }), el('dd', { text: describeValue(h.sessionId) }),
     );
+    const predictions = h.predictions && typeof h.predictions === 'object' ? h.predictions : null;
+    if (predictions) {
+      const label = {
+        ready: predictions.active === true ? 'a prediction is running for this fight' : 'ready: each boss opens a Channel Points prediction',
+        'not-monetized': 'unavailable: Channel Points needs an Affiliate or Partner channel',
+        'missing-scope': 'off: reconnect Twitch to grant channel:manage:predictions',
+        unknown: auth && auth.connected === true ? 'checking…' : 'connect Twitch first',
+      }[predictions.capability] || '—';
+      rows.append(el('dt', { text: 'predictions' }), el('dd', { text: typeof predictions.note === 'string' && predictions.note ? `${label} (${predictions.note})` : label }));
+    }
     if (typeof h.error === 'string' && h.error) {
       rows.append(
         el('dt', { text: 'error' }),
@@ -748,7 +763,38 @@
     if (epoch === renderEpoch) renderReadiness();
     return ok;
   }
-  const loadAll = async () => (await Promise.all([loadHealth(), loadStatus(), loadReadiness()])).every(Boolean);
+  // ——— Hall of Fame (authenticated GET /api/hall), loaded only while its view is open. ———
+  function renderHall(hall) {
+    const fighters = hall && Array.isArray(hall.fighters) ? hall.fighters : [];
+    const bosses = hall && Array.isArray(hall.bosses) ? hall.bosses : [];
+    const lore = hall && Array.isArray(hall.lore) ? hall.lore : [];
+    const defeated = hall && typeof hall.bossesDefeated === 'number' ? hall.bossesDefeated : 0;
+    $('hall-summary').textContent = `${hall && hall.source === 'replay' ? 'REPLAY · ' : ''}${defeated} ${defeated === 1 ? 'boss' : 'bosses'} defeated`;
+    const f = $('hall-fighters'); clear(f);
+    if (!fighters.length) f.append(el('p', { class: 'caption', text: 'No fights recorded yet. Spawn a boss and let chat attack.' }));
+    else f.append(el('table', { class: 'hall-table' },
+      el('thead', {}, el('tr', {}, ...['#', 'Viewer', 'Damage', 'Bosses beaten', 'Blocks', 'Final blows'].map(t => el('th', { text: t })))),
+      el('tbody', {}, ...fighters.map((x, i) => el('tr', {},
+        el('td', { text: String(i + 1) }), el('td', { text: String(x.userName || '') }), el('td', { text: String(x.damage) }),
+        el('td', { text: String(x.bossesBeaten) }), el('td', { text: String(x.blocks) }), el('td', { text: String(x.finalBlows) }))))));
+    const b = $('hall-bosses'); clear(b);
+    if (!bosses.length) b.append(el('p', { class: 'caption', text: 'No bosses yet.' }));
+    else b.append(el('ol', { class: 'hall-list' }, ...bosses.map(x => {
+      const spawned = Date.parse(String(x.spawnedAt)); const done = x.defeatedAt ? Date.parse(String(x.defeatedAt)) : NaN;
+      const fought = Number.isFinite(spawned) && Number.isFinite(done) ? ` in ${Math.floor((done - spawned) / 60000)}:${String(Math.floor(((done - spawned) % 60000) / 1000)).padStart(2, '0')}` : '';
+      const outcome = x.defeatedAt ? `defeated${fought}${x.finisher ? ` · final blow ${x.finisher}` : ''}${x.topFighter ? ` · top ${x.topFighter}` : ''}` : 'not defeated';
+      return el('li', {}, el('strong', { text: String(x.name || '') }), ` · ${x.maxHp} HP · ${outcome} · strikes blocked ${x.strikesBlocked}, landed ${x.strikesLanded} · ${localWhen(x.spawnedAt)}`);
+    })));
+    const l = $('hall-lore'); clear(l);
+    if (!lore.length) l.append(el('p', { class: 'caption', text: 'Approved lore will collect here.' }));
+    else l.append(el('ul', { class: 'hall-list' }, ...lore.map(x => el('li', {}, el('span', { class: `chip chip-${String(x.kind) === 'quote' ? 'danger' : 'gold'}`, text: String(x.kind) }), ' ', String(x.text)))));
+  }
+  async function loadHall() {
+    if (currentView() !== '/hall') return true;
+    try { renderHall(await api('/api/hall')); return true; }
+    catch (err) { fail(err, 'Hall of Fame unavailable'); return false; }
+  }
+  const loadAll = async () => (await Promise.all([loadHealth(), loadStatus(), loadReadiness(), loadHall()])).every(Boolean);
 
   async function unlock(event) {
     event.preventDefault();

@@ -2,6 +2,17 @@
 
 **Your chat's inside jokes become a boss your whole community fights.**
 
+### Community fight mechanics
+
+- `!attack` deals base damage; distinct viewers attacking within five seconds build a combo (up to +10 bonus damage).
+- A lore strike starts charging 15 seconds after spawn. Chat has eight seconds to `!block`; the required number of distinct blockers scales with active chatters. Blocking stuns the boss for five seconds and doubles incoming damage. An unblocked strike restores some boss HP.
+- The boss enrages at 50% and 25% HP, with faster strikes. Heals restore five HP, capped at max HP. Base Bits damage is capped at 100 before the stun multiplier and remaining-HP clamp.
+- `/hall` shows persistent fighter totals, boss history and approved lore, separated between live and replay. The defeat overlay shows earned titles and the final blow. `!stats` replies with the viewer's recorded history. Display names and combat history remain until the operator purges the database.
+- Optional Channel Points Predictions ask whether chat can win within three minutes. They require an eligible Affiliate/Partner channel plus `channel:manage:predictions`; existing authorizations without that scope still support ordinary fights. Reconnect Twitch to grant it if wanted. Predictions report a result only after Twitch accepts settlement; failures direct the operator to Twitch's Predictions dashboard. Real account Predictions have not been acceptance-tested. [Twitch API](https://dev.twitch.tv/docs/api/reference/#create-prediction).
+- Optional synthesized overlay sounds use `/overlay-view?sound`; ordinary OBS mode stays silent. Your browser/OBS audio policy still applies.
+
+Local feature acceptance: cooperative strike/block/stun, failure healing, defeat, Hall of Fame and overlay reload are exercised through an isolated labeled replay fixture. This does not prove real participant engagement or live Channel Points settlement. Earlier demo footage predates these mechanics.
+
 Lore Boss listens to Twitch chat (EventSub), uses an LLM to propose recurring community lore (catchphrases, rivalries, legendary moments, quotes), and shows each proposal to a moderator *with the exact chat messages that support it*. Approved lore becomes a raid boss in a transparent OBS browser-source overlay. Viewers fight it with `!attack` and `!heal`, Bits land capped critical hits, the defeat screen crowns MVPs, and an incoming raid gets a "previously on…" recap built from approved lore.
 
 - Built for: Twitch streamers and their communities (chat + EventSub + Helix chat + OBS overlay).

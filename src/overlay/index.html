@@ -13,16 +13,30 @@
   </style>
 </head>
 <body class="ov-body">
-  <div class="ov-root">
+  <div class="ov-root" id="ov-root">
     <div id="badge-replay" class="badge-replay" hidden>REPLAY MODE — LABELED</div>
 
     <p id="ov-empty" class="ov-empty">A community-lore boss will appear here soon. Approved chat lore powers the fight.</p>
 
     <section id="ov-fight" class="ov-fight" hidden aria-label="Boss fight">
-      <div class="ov-boss-panel">
-        <h2 id="ov-boss-name">Boss</h2>
-        <div class="hp-track"><div class="hp-fill" id="ov-hp-fill"></div></div>
-        <p id="ov-hp-caption" class="hp-caption caption"></p>
+      <div class="ov-boss-panel" id="ov-boss-panel">
+        <div class="ov-boss-head">
+          <h2 id="ov-boss-name">Boss</h2>
+          <span id="ov-stage" class="chip ov-stage" hidden></span>
+          <span id="ov-timer" class="ov-timer" aria-label="Fight time"></span>
+        </div>
+        <div class="hp-track"><div class="hp-ghost" id="ov-hp-ghost"></div><div class="hp-fill" id="ov-hp-fill"></div></div>
+        <div class="ov-hp-row">
+          <p id="ov-hp-caption" class="hp-caption caption"></p>
+          <span id="ov-stunned" class="chip chip-gold" hidden>STUNNED · double damage</span>
+          <span id="ov-combo" class="ov-combo" hidden></span>
+        </div>
+      </div>
+      <div id="ov-strike" class="ov-strike" hidden aria-live="polite">
+        <p class="ov-strike-title">LORE STRIKE CHARGING</p>
+        <p class="ov-strike-hint">Chat, type <b>!block</b> to stop it, or the boss heals</p>
+        <div class="strike-meter"><div class="strike-fill" id="ov-strike-fill"></div></div>
+        <p id="ov-strike-count" class="ov-strike-count"></p>
       </div>
       <div class="ov-row">
         <aside class="ov-top-damage">
@@ -36,15 +50,25 @@
           <p class="q-src caption"><span id="ov-quote-src">mod-approved lore</span></p>
         </div>
       </div>
+      <p class="ov-commands">!attack · !heal · !block · !stats</p>
     </section>
 
     <section id="ov-defeated" class="ov-center-view ov-defeated" hidden aria-label="Boss defeated">
       <h2 class="name">Boss defeated!</h2>
       <p id="ov-defeated-name" style="font: var(--lb-h2-28);"></p>
-      <div class="ov-mvp">
-        <p class="dg-title" style="color: var(--lb-gold); text-transform: uppercase; font-size: 13px;">MVPs</p>
-        <ol id="ov-mvp-list"></ol>
+      <p id="ov-finisher" class="ov-finisher" hidden></p>
+      <div class="ov-defeat-grid">
+        <div class="ov-mvp">
+          <p class="dg-title" style="color: var(--lb-gold); text-transform: uppercase; font-size: 13px;">MVPs</p>
+          <ol id="ov-mvp-list"></ol>
+        </div>
+        <div class="ov-hall" id="ov-hall" hidden>
+          <p class="dg-title">All-time Hall of Fame</p>
+          <ol id="ov-hall-list"></ol>
+          <p id="ov-hall-count" class="caption"></p>
+        </div>
       </div>
+      <p class="caption ov-stats-hint">Type <b>!stats</b> in chat for your record</p>
     </section>
 
     <section id="ov-recap" class="ov-center-view" hidden aria-label="Raid recap">
@@ -55,6 +79,10 @@
       <p id="ov-recap-hint" class="ov-recap-hint">Raiders: type !attack to join the fight →</p>
     </section>
 
+    <p id="ov-prediction" class="ov-prediction" hidden></p>
+    <div id="ov-floaters" class="ov-floaters" aria-hidden="true"></div>
+    <div id="ov-confetti" class="ov-confetti" aria-hidden="true"></div>
+    <p id="ov-splash" class="ov-splash" hidden></p>
     <p id="ov-hitpop" class="ov-pop" hidden></p>
     <div id="ov-ticker" class="ov-ticker" hidden></div>
     <p id="ov-conn" class="ov-conn">connecting…</p>

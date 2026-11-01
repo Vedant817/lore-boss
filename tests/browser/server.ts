@@ -30,10 +30,18 @@ async function seed(): Promise<void> {
   // Deliberately expired evidence: demonstrates the honest "missing or expired" state after retention.
   runtime.store.addCandidate(sessionId, { kind: 'catchphrase', text: 'One more attempt', authorUserId: null, evidenceMessageIds: ['fixture-message-1', 'fixture-message-2'] });
 }
-app.post('/api/test-reset', async () => { await seed(); return { ok: true }; });
+// Fixture-only time machine: shifts the runtime's injectable clock and runs one game tick, so a
+// judge or test can see a lore strike charge and land without waiting in real time.
+let clockOffset = 0;
+runtime.now = () => Date.now() + clockOffset;
+app.post('/api/test-advance', request => {
+  const { ms } = z.object({ ms: z.number().int().min(0).max(600_000) }).strict().parse(request.body);
+  clockOffset += ms; runtime.tick(); return runtime.boss;
+});
+app.post('/api/test-reset', async () => { clockOffset = 0; await seed(); return { ok: true }; });
 app.post('/api/test-overlay', request => { runtime.broadcast(request.body as Record<string, unknown>); return { ok: true }; });
 app.post('/api/test-command', request => {
-  const body = z.object({ user: z.string().min(1), command: z.enum(['!attack', '!heal']) }).parse(request.body);
+  const body = z.object({ user: z.string().min(1), command: z.enum(['!attack', '!heal', '!block']) }).parse(request.body);
   runtime.accept({ id: randomUUID(), ts: new Date().toISOString(), source: 'replay', channelId: 'test-channel', kind: 'command', userId: body.user, userName: body.user, command: body.command, args: [] });
   return runtime.boss;
 });
@@ -53,7 +61,7 @@ app.post('/api/test-raid', request => {
   return { ok: true };
 });
 app.get('/test-fixture', (_request, reply) => reply.header('Referrer-Policy', 'same-origin').type('text/html').send('<!doctype html><html lang="en"><title>Lore Boss test fixture</title><h1>Synthetic REPLAY fixture</h1><p>This server uses isolated in-memory data. It never connects to Twitch or a live LLM.</p><form method="post" action="/test-fixture/reset"><button>Reset test data</button></form></html>'));
-app.post('/test-fixture/reset', async (_request, reply) => { await seed(); return reply.header('Referrer-Policy', 'same-origin').code(303).redirect('/'); });
+app.post('/test-fixture/reset', async (_request, reply) => { clockOffset = 0; await seed(); return reply.header('Referrer-Policy', 'same-origin').code(303).redirect('/'); });
 app.addHook('onClose', async () => { unlinkSync(replayFile); rmdirSync(fixtureDir); });
 await seed(); await app.listen({ host: '127.0.0.1', port });
 console.log(`Isolated synthetic REPLAY browser fixture listening on localhost:${port}`);

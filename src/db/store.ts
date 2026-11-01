@@ -13,6 +13,15 @@ type LoreKind = LoreItem['kind'];
 type LoreStatus = LoreItem['status'];
 
 export interface EvidenceMessage { id: string; userName: string; text: string; ts: string }
+export interface FighterStats { userId: string; userName: string; damage: number; bossesBeaten: number; blocks: number; finalBlows: number; crits: number }
+export interface BossRecord { id: string; name: string; maxHp: number; spawnedAt: string; defeatedAt: string | null; finisher: string | null; topFighter: string | null; strikesBlocked: number; strikesLanded: number }
+export interface LoreBookEntry { id: string; kind: LoreItem['kind']; text: string; reviewedAt: string | null }
+export interface HallOfFame { fighters: FighterStats[]; bosses: BossRecord[]; lore: LoreBookEntry[]; bossesDefeated: number }
+
+function count(value: unknown, column: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) fail(`column ${column} is not a number`);
+  return value;
+}
 
 const LORE_COLUMNS =
   'id, session_id, kind, text, author_user_id, evidence_message_ids, status, reviewed_by, reviewed_at, created_at';
@@ -65,6 +74,18 @@ CREATE TABLE IF NOT EXISTS damage_events (
   ts TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_lore_status ON lore_items(status);
+-- Hall of Fame: latest display name per viewer and successful !block events. Purge deletes both.
+CREATE TABLE IF NOT EXISTS viewers (
+  user_id TEXT PRIMARY KEY,
+  user_name TEXT NOT NULL,
+  last_seen TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS blocks (
+  id TEXT PRIMARY KEY,
+  boss_id TEXT NOT NULL REFERENCES bosses(id),
+  user_id TEXT NOT NULL,
+  ts TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS processed_events (
   session_id TEXT NOT NULL REFERENCES sessions(id),
   id TEXT NOT NULL,
@@ -157,6 +178,11 @@ export class Store {
       this.db.exec(SCHEMA);
       this.db.exec('INSERT INTO chat_messages SELECT * FROM chat_messages_old; DROP TABLE chat_messages_old');
     })();
+    // Additive Hall of Fame columns for databases created before boss mechanics existed.
+    const bossColumns = new Set((this.db.pragma('table_info(bosses)') as { name: string }[]).map(column => column.name));
+    if (!bossColumns.has('finisher_user_id')) this.db.exec('ALTER TABLE bosses ADD COLUMN finisher_user_id TEXT');
+    if (!bossColumns.has('strikes_blocked')) this.db.exec('ALTER TABLE bosses ADD COLUMN strikes_blocked INTEGER NOT NULL DEFAULT 0');
+    if (!bossColumns.has('strikes_landed')) this.db.exec('ALTER TABLE bosses ADD COLUMN strikes_landed INTEGER NOT NULL DEFAULT 0');
   }
 
   close(): void {
@@ -318,6 +344,8 @@ export class Store {
     const run = this.db.transaction(() => {
       this.db.prepare('DELETE FROM processed_events').run();
       this.db.prepare('DELETE FROM damage_events').run();
+      this.db.prepare('DELETE FROM blocks').run();
+      this.db.prepare('DELETE FROM viewers').run();
       this.db.prepare('DELETE FROM bosses').run();
       this.db.prepare('DELETE FROM lore_items').run();
       this.db.prepare('DELETE FROM chat_messages').run();
@@ -355,17 +383,19 @@ export class Store {
 
     this.db
       .prepare(
-        `INSERT INTO bosses (id, session_id, name, max_hp, lore_ids, spawned_at, defeated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO bosses (id, session_id, name, max_hp, lore_ids, spawned_at, defeated_at, strikes_blocked, strikes_landed)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            session_id = excluded.session_id,
            name = excluded.name,
            max_hp = excluded.max_hp,
            lore_ids = excluded.lore_ids,
            spawned_at = excluded.spawned_at,
-           defeated_at = COALESCE(bosses.defeated_at, excluded.defeated_at)`,
+           defeated_at = COALESCE(bosses.defeated_at, excluded.defeated_at),
+           strikes_blocked = excluded.strikes_blocked,
+           strikes_landed = excluded.strikes_landed`,
       )
-      .run(bossId, sessionId, name, state.maxHp, JSON.stringify(loreIds), startedAt, defeatedAt);
+      .run(bossId, sessionId, name, state.maxHp, JSON.stringify(loreIds), startedAt, defeatedAt, state.strikesBlocked, state.strikesLanded);
   }
 
   // damage_events has no event_id column (ARCHITECTURE.md §5), so the event id is the row id
@@ -388,6 +418,66 @@ export class Store {
     this.db
       .prepare('INSERT INTO damage_events (id, boss_id, user_id, amount, crit, cause, ts) VALUES (?, ?, ?, ?, ?, ?, ?)')
       .run(eventId, bossId, userId, amount, crit ? 1 : 0, cause, ts);
+  }
+
+  // Latest display name for a viewer who fought; the Hall of Fame shows names, never raw ids.
+  saveViewer(userId: string, userName: string, ts: string): void {
+    requireText(userId, 'viewer id'); requireText(userName, 'viewer name'); requireText(ts, 'viewer ts');
+    this.db.prepare('INSERT INTO viewers (user_id, user_name, last_seen) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET user_name = excluded.user_name, last_seen = excluded.last_seen').run(userId, userName, ts);
+  }
+
+  // The event id is the row id, so a redelivered !block cannot be counted twice.
+  saveBlock(bossId: string, eventId: string, userId: string, ts: string): void {
+    requireText(eventId, 'block eventId'); requireText(userId, 'block userId'); requireText(ts, 'block ts');
+    this.db.prepare('INSERT INTO blocks (id, boss_id, user_id, ts) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO NOTHING').run(eventId, bossId, userId, ts);
+  }
+
+  setFinisher(bossId: string, userId: string): void {
+    requireText(userId, 'finisher userId');
+    this.db.prepare('UPDATE bosses SET finisher_user_id = COALESCE(finisher_user_id, ?) WHERE id = ?').run(userId, bossId);
+  }
+
+  // Cross-stream records for one source only, so replay never mixes into live history.
+  hallOfFame(source: Source, limit = 10): HallOfFame {
+    const scoped = 'SELECT b.*, b.rowid AS row_order FROM bosses b JOIN sessions s ON s.id = b.session_id WHERE s.source = @source';
+    const fighters = this.db.prepare(
+      `WITH lb AS (${scoped})
+       SELECT v.user_id, v.user_name,
+         COALESCE((SELECT SUM(d.amount) FROM damage_events d JOIN lb ON lb.id = d.boss_id WHERE d.user_id = v.user_id AND d.cause IN ('attack','cheer')), 0) AS damage,
+         (SELECT COUNT(DISTINCT d.boss_id) FROM damage_events d JOIN lb ON lb.id = d.boss_id WHERE d.user_id = v.user_id AND d.cause IN ('attack','cheer') AND lb.defeated_at IS NOT NULL) AS bosses_beaten,
+         (SELECT COUNT(*) FROM blocks k JOIN lb ON lb.id = k.boss_id WHERE k.user_id = v.user_id) AS blocks,
+         (SELECT COUNT(*) FROM lb WHERE lb.finisher_user_id = v.user_id) AS final_blows,
+         (SELECT COUNT(*) FROM damage_events d JOIN lb ON lb.id = d.boss_id WHERE d.user_id = v.user_id AND d.crit = 1) AS crits
+       FROM viewers v`,
+    ).all({ source }).map(row => {
+      const r = asRow(row);
+      return { userId: text(r['user_id'], 'user_id'), userName: text(r['user_name'], 'user_name'), damage: count(r['damage'], 'damage'), bossesBeaten: count(r['bosses_beaten'], 'bosses_beaten'), blocks: count(r['blocks'], 'blocks'), finalBlows: count(r['final_blows'], 'final_blows'), crits: count(r['crits'], 'crits') };
+    }).filter(f => f.damage > 0 || f.blocks > 0).sort((a, b) => b.damage - a.damage || b.blocks - a.blocks || a.userName.localeCompare(b.userName));
+    const bosses = this.db.prepare(
+      `WITH lb AS (${scoped})
+       SELECT lb.id, lb.name, lb.max_hp, lb.spawned_at, lb.defeated_at, lb.strikes_blocked, lb.strikes_landed,
+         (SELECT v.user_name FROM viewers v WHERE v.user_id = lb.finisher_user_id) AS finisher,
+         (SELECT v.user_name FROM damage_events d JOIN viewers v ON v.user_id = d.user_id WHERE d.boss_id = lb.id AND d.cause IN ('attack','cheer') GROUP BY d.user_id ORDER BY SUM(d.amount) DESC, v.user_name LIMIT 1) AS top_fighter
+       FROM lb ORDER BY lb.spawned_at DESC, lb.row_order DESC LIMIT @limit`,
+    ).all({ source, limit }).map(row => {
+      const r = asRow(row);
+      return { id: text(r['id'], 'id'), name: text(r['name'], 'name'), maxHp: count(r['max_hp'], 'max_hp'), spawnedAt: text(r['spawned_at'], 'spawned_at'), defeatedAt: nullableText(r['defeated_at'], 'defeated_at'), finisher: nullableText(r['finisher'], 'finisher'), topFighter: nullableText(r['top_fighter'], 'top_fighter'), strikesBlocked: count(r['strikes_blocked'], 'strikes_blocked'), strikesLanded: count(r['strikes_landed'], 'strikes_landed') };
+    });
+    const defeated = asRow(this.db.prepare(`WITH lb AS (${scoped}) SELECT COUNT(*) AS n FROM lb WHERE defeated_at IS NOT NULL`).get({ source }));
+    const lore = this.db.prepare(
+      `SELECT l.id, l.kind, l.text, l.reviewed_at FROM lore_items l JOIN sessions s ON s.id = l.session_id
+       WHERE l.status = 'approved' AND s.source = @source ORDER BY COALESCE(l.reviewed_at, l.created_at) DESC, l.rowid DESC LIMIT 50`,
+    ).all({ source }).map(row => {
+      const r = asRow(row);
+      return { id: text(r['id'], 'id'), kind: parseKind(text(r['kind'], 'kind')), text: text(r['text'], 'text'), reviewedAt: nullableText(r['reviewed_at'], 'reviewed_at') };
+    });
+    return { fighters: fighters.slice(0, limit), bosses, lore, bossesDefeated: count(defeated['n'], 'n') };
+  }
+
+  fighterStats(source: Source, userId: string): { stats: FighterStats; rank: number } | null {
+    const all = this.hallOfFame(source, Number.MAX_SAFE_INTEGER).fighters;
+    const index = all.findIndex(f => f.userId === userId);
+    return index === -1 ? null : { stats: all[index]!, rank: index + 1 };
   }
 
   private getLore(id: string): LoreItem {
