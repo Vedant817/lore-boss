@@ -362,3 +362,7 @@ Independent scores:Grok14/20,Codex14/20,OpenCode13/20;mean13.67. Authored report
 ## 2026-11-02 — ITERATION-10 presentation repair
 
 Root reproduced2browser failures before fixing the confirmed cue collision and mobile identity loss. One latest attributed cue now occupies a48px reserved flow lane with opacity-only fade;Viewer column stays visible during horizontal scrolling. Primary numeric feedback/game rules/history/provider behavior unchanged. Focused2passed;joined typecheck/lint/unit/build/guardrails/full browser PASS:221unit/15files,47browser(26.4s). README clarifies six-pattern string-scan scope. New live-served overlay assets hash-match source;no backend restart/session replacement. Groq still reports429cooldown;no retries or reliability claim. Fresh media remains separate work.
+
+## 2026-11-02 — capture caught compressed sticky identity
+
+Before accepting new media,root found the pinned Viewer column wrapping one character per line. Added a meaningful two-line readability regression(old260px,allowed<=71px),then12ch minimum width;focused PASS. Repeated joined gates after the correction:221unit/15files,47browser(27.6s),typecheck/lint/build/guardrails PASS. Rejected working121.2s cut preserved and labeled;not independently reviewed. Final media will explicitly label any earlier62fed7d footage and recapture only corrected mobile at the new commit,without extra public posts or a fabricated new provider success.

@@ -114,6 +114,11 @@ test('mobile Hall exposes horizontal statistics scrolling with keyboard access',
   const lastHeader = await page.getByRole('columnheader', { name: 'Final blows', exact: true }).boundingBox();
   expect(lastHeader!.x + lastHeader!.width).toBeLessThanOrEqual(regionBox!.x + regionBox!.width + 1);
   const viewer = await table.locator('tbody tr').first().locator('td').nth(1).boundingBox();
+  const readableHeight = await table.locator('tbody tr').first().locator('td').nth(1).evaluate(node => {
+    const style = getComputedStyle(node);
+    return 2 * Number.parseFloat(style.lineHeight) + Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom) + 1;
+  });
+  expect(viewer!.height).toBeLessThanOrEqual(readableHeight);
   expect(viewer!.x).toBeGreaterThanOrEqual(regionBox!.x - 1);
   expect(viewer!.x + viewer!.width).toBeLessThanOrEqual(lastHeader!.x);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);

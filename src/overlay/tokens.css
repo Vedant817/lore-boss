@@ -462,6 +462,7 @@ a { color: var(--lb-primary-hi); }
   left: 0;
   z-index: 1;
   background: var(--lb-surface);
+  min-width: 12ch;
   max-width: 16ch;
   overflow-wrap: anywhere;
 }
