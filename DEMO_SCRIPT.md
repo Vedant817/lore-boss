@@ -1,6 +1,18 @@
 # DEMO SCRIPT — current recording and historical shooting plan
 
-## Current ITERATION-08 recording — 2026-11-02 IST
+## ITERATION-09 current video — 2026-11-02 IST
+
+`C:/Users/vedan/Videos/LoreBoss-judge04-2026-11-02/LoreBoss-demo-judge04.mp4` — **150 seconds,1920×1080 H.264/25fps,3750frames,AAC local synthetic narration**. Product9beedce; SHA256`9edee549202f8145594061b6c34c8c3bfd73e06895b7e2edfa8a7165279f450a`. The matching38-entry ZIP passes CRC and MP4 hash verification;14final-file stills and manifest/validation/source provenance accompany it. All older packages and their dated observations below are historical.
+
+Fresh current product footage: real own-channel labeled messages → actual inference → cited stored evidence → moderator edit/approval →45HP spawn → block/stun →20damage →+5heal →20damage →10final damage →defeat/reload and !stats reply. Eight authorized posts; one broadcaster. Actual fight24.721s,50damage,one successful block. Hall14bosses/540damage are retained historical solo totals, not participants. A phone-width browser recording shows focusable horizontal statistics scrolling and the last column; no physical-device study.
+
+Separate continuously labeled synthetic replay shows two distinct fixture fighters dealing20and24stun/combo damage, a heal and approved-lore raid recap/resume. Synthetic model responses drive actual validation/API/UI rejection then valid empty output, with coherent health feedback. No live provider recovery guarantee is inferred. A bounded per-client Retry-After cooldown is unit-tested; no automatic resend/fallback or changed5s timeout.
+
+Three shorter Codex cards render actual user-visible decision → failing regression → recorded repair → joined gate output. Full identified exports are included; this is not original Codex UI, live coding or hidden reasoning. Local Microsoft Zira narration is synthetic, not the owner's voice. Static cards24.85% of the cut; all24measured text fields fit; full audio/video decode passes and no≥3s audio gaps below−40dB were detected. Root inspected all14encoded stills. Continuous human playback/listening and intelligibility remain unverified.
+
+Current joined gates:221unit tests/15files,46browser tests; typecheck/lint/build/guardrails PASS. Gitleaks scans of public package and explicit source copy PASS; the only initial finding was a verified public-export digest under a misleading metadata key, renamed without ignoring any rule. Private bootstrap state was removed before capture. New panel04 is pending; no score improvement assumed. Viewers remain unavailable; studyNOT RUN. Real paid Bits/raid/Predictions, broadcast, owner YouTube publication and Devpost form/submission remain unclaimed.
+
+## Historical ITERATION-08 recording — 2026-11-02 IST
 
 Use only `C:/Users/vedan/Videos/LoreBoss-judge03-2026-11-02/LoreBoss-demo-judge03.mp4` — **153.6 seconds, 1920×1080 H.264/25fps, 3840 frames, AAC synthetic narration**. Product `2190e1c`; SHA256 `b6a09249ba16a9aff9d381c7acbf6ce62e19700c68021bcb08dad8b648ae5220`. Matching manifest/HANDOFF/SHA256/captions/stills are in that folder; all earlier packages are historical.
 
