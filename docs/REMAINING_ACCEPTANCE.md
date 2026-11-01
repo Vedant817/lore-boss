@@ -56,3 +56,7 @@ Resolved from the official GitHub repositories using `gh api repos/actions/<acti
 Redacted pre-publication scan summary: `3 commits scanned; scanned ~596224 bytes (596.22 KB); no leaks found; exit 0`. GitHub publication was then confirmed as `PUBLIC` by `gh repo view`.
 
 Failure artifact path is derived with the same Node `os.tmpdir()` and `path.join(..., 'loreboss-playwright-3162')` used by playwright.config.ts with `LB_BROWSER_PORT=3162`; each matrix runner has its own temporary directory. Recording formats (`*.mp4`, `*.mkv`, `*.mov`, `*.webm`) and `recordings/` are explicitly ignored, in addition to real JSONL recordings and secret/state paths.
+
+## Latest repair-round media — 2026-11-02 IST
+
+`C:/Users/vedan/Videos/LoreBoss-judge02-2026-11-02/LoreBoss-demo-judge02.mp4` — **145.86 seconds, 1920×1080 H.264, 3645 frames, AAC locally synthesized narration**. Product commit `9c99a3a`; SHA256 `47fba546424f12c73d4ea49dc9b0416853f7863101d986cac9c4317f90da4e9d`. The current video includes native Twitch chat, repaired presentation, synthetic narration and authentic rendered Codex repair excerpts. Older media pointers above are historical. Local gates181unit/37browser passed at9c99a3a; final-file decode and non-silent audio validated. New independent judge reviews are pending. Community study, real Bits/raid, eligible Predictions, public broadcast, owner publication/form answers/submission remain unproven or owner-managed.

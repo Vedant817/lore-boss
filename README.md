@@ -19,11 +19,11 @@ Lore Boss listens to Twitch chat (EventSub), uses an LLM to propose recurring co
 - Built with: OpenAI Codex. Main Codex session ID: `01a17213-bdd6-76b0-ad36-6c8f9841a293`.
 - Stack: TypeScript (strict), Node 22+, Fastify, ws, SQLite (better-sqlite3), zod, plain browser UI.
 
-These stills come from the demo recording on the streamer's own Twitch channel (Nov 1, 2026). Real twitch.tv chat is on the right:
+These stills come from the current repair-round recording at product commit 9c99a3a (packaged Nov 2 IST, 2026). Actual twitch.tv chat is on the right. This is one broadcaster's rehearsal:
 
 | Evidence-backed moderation | The boss fight in the OBS overlay | Defeat, MVPs and the `!lore` chat reply |
 |---|---|---|
-| ![Moderation queue with chat evidence](docs/screenshots/moderation-queue-with-evidence.jpg) | ![Overlay boss fight next to Twitch chat](docs/screenshots/overlay-fight-with-twitch-chat.jpg) | ![Defeat screen and !lore reply in Twitch chat](docs/screenshots/defeat-and-lore-reply.jpg) |
+| ![Moderation queue with chat evidence](docs/screenshots/judge02-evidence.png) | ![Overlay boss fight next to Twitch chat](docs/screenshots/judge02-block-stun.png) | ![Defeat screen and !lore reply in Twitch chat](docs/screenshots/judge02-defeat-chat.png) |
 
 ## For judges: try it in 2 minutes, no Twitch or LLM keys needed
 

@@ -1,6 +1,14 @@
-# DEMO SCRIPT — current recording and original shooting plan
+# DEMO SCRIPT — current recording and historical shooting plan
 
-## Current recording — 2026-11-01
+## Current repair-round recording — 2026-11-02 IST
+
+Use only `C:/Users/vedan/Videos/LoreBoss-judge02-2026-11-02/LoreBoss-demo-judge02.mp4` — **145.86 seconds, 1920×1080 H.264, 3645 frames, AAC locally synthesized narration**. Product commit `9c99a3a`; SHA256 `47fba546424f12c73d4ea49dc9b0416853f7863101d986cac9c4317f90da4e9d`. The matching HANDOFF, manifest, captions, twelve screenshots and hash are in that folder. Older packages are historical.
+
+The fresh cut pairs actual native Twitch chat with the app: two new labeled rehearsal lore messages, successful Groq extraction, expanded two-message evidence, moderator edit/approval, real 25HP spawn, block/stun, attack25→5, heal→10, final attack→0, defeat/reload, !stats/!lore replies, and desktop/mobile Hall. Eight own-channel posts total across both takes; no third-party participant is implied. A separate continuously labeled synthetic REPLAY segment shows distinct-user combo and raid recap/resume. Authentic Codex public request/tool/patch excerpts are rendered legibly, labeled as excerpts rather than original UI or live coding. Microsoft Zira narration is locally synthesized, not the owner's voice.
+
+One initial readiness call returned HTTP400; an explicit manual recheck and extraction succeeded without switching model/provider. The cause is UNVERIFIED; the failed take is preserved separately, not represented as a repaired provider defect. Approximate paired-capture alignment and genuine-frame holds are disclosed in the manifest. No latency benchmark, multi-viewer study, real Bits/raid, Predictions settlement, public broadcast, upload or Devpost action is claimed.
+
+## Historical recording — 2026-11-01
 
 The October29 video at adc9e96 is superseded for showing current functionality by `C:/Users/vedan/Videos/LoreBoss-latest-2026-11-01/LoreBoss-demo-latest.mp4`: **133.16 seconds, 1920×1080 H.264, 25fps, silent/captioned**, freshly captured at product commit ed713e6. No old footage is reused. The directory includes measured captions, final-video screenshots, description, manifest and SHA256; the old package is preserved.
 
