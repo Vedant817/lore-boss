@@ -7,6 +7,17 @@ const fight = (maxHp = 100) => reduce(spawn(maxHp), { type: 'start' });
 describe('deterministic boss reducer', () => {
   it('starts idle and empty', () => expect(idle()).toMatchObject({ phase: 'idle', hp: 0, attackPool: [] }));
   it('spawns from approved text', () => expect(spawn()).toMatchObject({ phase: 'spawning', name: lore().text }));
+  it('shortens a long boss label at a word boundary while preserving the approved attack', () => {
+    const text = 'The midnight snack council demands another rematch';
+    const state = reduce(idle(), { type: 'spawn', id: 'label-test', maxHp: 100, lore: [lore({ text })], ts: '2026-10-25T00:00:00Z' });
+    expect(state.name).toBe('The midnight snack council demands…');
+    expect(state.attackPool[0]?.text).toBe(text);
+  });
+  it('bounds long unspaced labels without splitting Unicode characters', () => {
+    const state = reduce(idle(), { type: 'spawn', id: 'unicode-label', maxHp: 100, lore: [lore({ text: '🌙'.repeat(45) })], ts: '2026-10-25T00:00:00Z' });
+    expect(state.name).toBe('🌙'.repeat(39) + '…');
+    expect(Array.from(state.name!)).toHaveLength(40);
+  });
   it('starts a spawned fight', () => expect(fight().phase).toBe('fight'));
   it('does not start idle', () => expect(reduce(idle(), { type: 'start' })).toEqual(idle()));
   it('rejects pending lore', () => expect(reduce(idle(), { type: 'spawn', id: 'b', maxHp: 100, lore: [lore({ status: 'pending' })], ts: '2026-10-25T00:00:00Z' })).toEqual(idle()));

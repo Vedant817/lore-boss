@@ -22,11 +22,12 @@ Every Twitch community has lore: the catchphrase that won't die, the rivalry bet
 Lore Boss turns a community's own chat history into a boss fight.
 
 1. **Listens to chat.** It connects to the broadcaster's channel through Twitch OAuth and EventSub (`channel.chat.message`, Bits and raid events).
-2. **Proposes lore with evidence.** Every 60 seconds (or on demand) an LLM reads recent public chat and proposes up to five lore items: catchphrases, rivalries, moments or quotes. Each must cite at least two real chat message IDs, and quotes must be verbatim substrings. Anything unsupported, blocked or malformed is dropped. No lore is ever invented.
-3. **Moderator stays in control.** Proposals go to a private queue. The moderator sees the exact supporting chat lines and approves, edits or rejects each one. Nothing reaches the stream until it is approved.
+2. **Proposes lore with evidence.** Every 60 seconds or on demand, an LLM reads recent eligible public chat and proposes up to five lore items. Each must cite at least two distinct stored message IDs; quotes must match a verbatim substring. Invalid schemas, missing IDs, unsupported quote attribution and blocked text are rejected. Those checks establish source references, not semantic truth: the moderator verifies what catchphrases, rivalries and moments mean.
+3. **Moderator stays in control.** Proposals enter a private queue with their exact supporting chat lines. The moderator approves, edits or rejects them. Only approved items become public. An edit is the moderator's judgment; it is not automatically re-proven as a verbatim quote.
 4. **Spawns a boss.** Approved lore becomes a raid boss in a transparent 1920×1080 OBS browser-source overlay. Its name and attacks are the community's own approved lore.
-5. **Chat fights back.** `!attack` deals 10, `!heal` restores 5, and Bits land critical hits (2× Bits, capped at 100). Commands have a per-viewer cooldown, and duplicate events are suppressed. The defeat screen ranks MVPs by actual damage.
+5. **Chat fights back.** `!attack` starts at 10 damage, with a bounded bonus when distinct viewers attack together; `!heal` restores 5 boss HP. A lore strike charges 15 seconds after spawn: chat has eight seconds to `!block`. Enough distinct blockers stun the boss for five seconds and double damage; a missed strike heals it. The boss enrages as HP falls. Bits deal twice their amount, capped at 100 damage per event. Per-viewer cooldowns and durable event deduplication protect the score.
 6. **Raids get a recap.** An incoming raid triggers a labeled "previously on…" recap built from approved lore. `!lore` replies in chat, rotating through approved lore.
+7. **The community keeps its history.** Defeat shows actual damage, the final blow and earned titles. A source-separated Hall of Fame and Lore Book persist across sessions; `!stats` replies with recorded viewer history. Names and totals remain until purge. Optional Channel Points Predictions need Twitch-confirmed channel capability; they are unavailable on our rehearsal channel and have not been live-accepted.
 
 ## How we built it (how we used Codex)
 
@@ -34,24 +35,24 @@ Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`)
 
 - turned the brief into a spec, architecture, milestone plan, design system (from supplied reference screenshots) and **guardrails** (no hallucinated APIs, so every external call cites its official doc URL; no fake data; replay must be a labeled flag; tests required);
 - implemented the core itself: Twitch OAuth with identity/scope validation, the EventSub WebSocket client with reconnect and durable de-duplication, the **pure deterministic boss reducer**, the evidence-checked LLM extraction pipeline (zod-validated, prompt-injection-aware) and the Fastify app wiring;
-- wrote scoped task cards for smaller UI, docs and review iterations, delegated them to other coding agents, reviewed their diffs and kept implementer and reviewer models distinct;
-- ran the gates on every change: TypeScript strict typecheck, ESLint, 142 Vitest unit tests, 32 Playwright browser tests, plus GitHub Actions on Windows and Linux × Node 22/24.
+- delegated earlier scoped UI/docs/review cards to OpenCode DeepSeek and GLM with distinct implementer/reviewer passes. Codex completed the later cooperative-fight iteration and current repairs directly; independent judge reviews followed, not every patch received a prior independent review;
+- verified changes with strict typecheck, ESLint, unit tests, isolated Playwright browser checks and guardrails. The current repair round passes **181 unit tests in 15 files and 37 browser tests**. Dated local totals and separately observed Windows/Linux × Node 22/24 CI conclusions are in CODEX_LOG.md. Passing gates are engineering evidence, not proof of audience enjoyment.
 
 The full card-by-card record is in `CODEX_LOG.md`.
 
-Stack: TypeScript (strict), Node 22+, Fastify, ws, SQLite via better-sqlite3, zod, a plain-JS operator UI and overlay, Twitch EventSub/Helix, OBS browser source. Inference uses any OpenAI-compatible endpoint the streamer configures; we tested Groq (`openai/gpt-oss-20b`).
+Stack: TypeScript (strict), Node 22+, Fastify, ws, SQLite via better-sqlite3, zod, a plain-JS operator UI and overlay, Twitch EventSub/Helix, OBS browser source. Inference accepts explicitly configured local, Groq or Modal OpenAI-compatible endpoints, not arbitrary hosted providers. We exercised Groq (`openai/gpt-oss-20b`). There is no automatic provider/model fallback.
 
 ## Challenges we ran into
 
-- **Keeping an LLM honest about real people.** We solved it structurally rather than by prompting alone: every candidate must cite real message IDs, quotes must be exact substrings, blocked terms are filtered, and a human approves everything.
+- **Checking AI claims about real people.** Schema, source-ID, quote/author and blocked-text checks reject mechanically unsupported output. They cannot prove every non-quote's meaning; the moderator reviews the actual cited text before approving or editing.
 - **Real-time correctness.** EventSub can redeliver events, sockets reconnect, and moderators can purge mid-extraction. We used a deterministic reducer, durable event de-duplication and generation counters, so in-flight work is cancelled after a disconnect or purge.
-- **Provider quirks.** In live testing, Groq's JSON object mode rejected some extractions with HTTP 400, and Groq documents that this happens occasionally. On Groq models that support it (`openai/gpt-oss-20b`/`120b`), Lore Boss now uses strict Structured Outputs. Constrained decoding there always produces schema-valid JSON, and evidence is still validated afterwards. Any other failure creates no lore, shows a plain-language status and retries on the next cycle without double-sending.
+- **Provider quirks.** Groq JSON object mode returned HTTP 400 in earlier rehearsals. Supported Groq models now use strict Structured Outputs, followed by our own validation. Network, provider, shape and JSON failures remain possible and surface a safe status. Each extraction call sends one request; a later scheduled cycle or explicit operator action is a new extraction, not a hidden retry loop.
 
 ## Accomplishments that we're proud of
 
 - It works on real Twitch: OAuth, EventSub chat, extraction, evidence review, approval, combat, defeat and `!lore` replies were verified live on the owner's channel.
-- The combat core is a pure function, so a fight replays identically from a recording, and replay mode is always visibly labeled.
-- Privacy by default: lore stays private until approved, ended-session chat is deleted after 24 hours, and one button purges everything.
+- The reducer is deterministic for an identical explicit action/time sequence. Source replay is visibly labeled; wall-clock strike/quote scheduling means a recording alone does not guarantee an identical whole-session timeline.
+- Evidence is private until approval. Ended-session chat and unapproved lore are removed after 24 hours; approved lore and community records remain until purge. Recording files are separate and must be deleted by their owner.
 
 ## What we learned
 
@@ -59,7 +60,7 @@ A live overlay needs a deterministic core and explicit lifecycle ownership. For 
 
 ## What's next
 
-A multi-viewer playtest on a live stream with real Bits and raids, optional generated boss portraits and sound, and packaging as a Twitch Extension so streamers don't need to run a local server.
+A consented multi-viewer playtest to measure comprehension, moderator work and willingness to play again, then onboarding improvements based on those observations. Real paid Bits, incoming raids and eligible-channel Predictions remain unverified. Portraits and Extension packaging are optional future work; opt-in synthesized effects already exist. Solo rehearsals demonstrate operation, not engagement or retention.
 
 ---
 
@@ -79,6 +80,6 @@ Open http://localhost:3107 and unlock with the public fixture-only token `test-m
 
 ## Owner checklist (not part of the submission text)
 
-1. Upload `Videos/LoreBoss-final-2026-11-01/LoreBoss-demo.mp4` (2:11) to YouTube as **Public**, not Unlisted or Private, using the title, description and chapters in that folder's `description.md` (optionally `captions.srt` as CC). Paste the URL above and in the form. Do not upload the older 2026-10-29 review copy.
-2. Fill the owner-only form fields: submitter type, country, and the age/eligibility attestations. Only you can answer these.
+1. Use only the ITERATION-07 replacement identified in DEMO_SCRIPT.md and its matching HANDOFF/manifest/SHA256. Earlier October29, `LoreBoss-final-2026-11-01` and `LoreBoss-latest-2026-11-01` packages are historical. The replacement's exact path/duration/hash will be filled after final encoding verification, before the new judge review. You own YouTube upload and replacing the URL placeholder; no upload/submission is claimed here.
+2. Complete all owner fields: 29286 submitter type; 29287 country; 29292 new-skills survey; 29293 future-Codex-use survey; 29294 age-of-majority, 29295 eligible-jurisdiction and 29296 non-employee attestations. These are personal answers. Project fields 29288 (repository), 29289 (session), 29290 (technology) and 29291 (community use) have draft material above; verify the current form before entering it.
 3. Paste the sections above, add 3–5 screenshots (overlay fight, evidence queue, defeat/MVP), then submit before the deadline.

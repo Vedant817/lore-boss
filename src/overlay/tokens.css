@@ -524,11 +524,14 @@ a { color: var(--lb-primary-hi); }
   100% { opacity: 0; transform: translateY(-120px) scale(1); }
 }
 
+.ov-notice-slot { width: min(920px, 100%); min-height: var(--lb-sp-12); flex-shrink: 0; }
 .ov-splash {
-  position: absolute; left: 0; right: 0; top: 38%;
-  text-align: center;
-  font: var(--lb-display-72);
-  text-shadow: 0 4px 0 var(--lb-bg), 0 0 32px var(--lb-bg);
+  margin: 0;
+  font: var(--lb-h2-28);
+  overflow-wrap: anywhere;
+  padding: var(--lb-sp-2) var(--lb-sp-4);
+  background: var(--lb-surface);
+  border-radius: var(--lb-r-8);
   pointer-events: none;
   animation: lb-splash 1800ms ease-out forwards;
 }
@@ -536,11 +539,10 @@ a { color: var(--lb-primary-hi); }
 .ov-splash.tone-gold { color: var(--lb-gold); }
 .ov-splash.tone-success { color: var(--lb-success); }
 @keyframes lb-splash {
-  0% { opacity: 0; transform: scale(0.6); }
-  15% { opacity: 1; transform: scale(1.12); }
-  25% { transform: scale(1); }
+  0% { opacity: 0; }
+  15% { opacity: 1; }
   80% { opacity: 1; }
-  100% { opacity: 0; transform: scale(1.04); }
+  100% { opacity: 0; }
 }
 
 .ov-root.shake { animation: lb-shake 380ms linear; }

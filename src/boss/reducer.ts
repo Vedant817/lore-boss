@@ -28,6 +28,13 @@ export function stageFor(hp: number, maxHp: number, current: BossState['stage'])
   return Math.max(current, computed) as BossState['stage'];
 }
 const finite = (at: number | undefined): at is number => typeof at === 'number' && Number.isFinite(at);
+function bossLabel(text: string): string {
+  const characters = Array.from(text);
+  if (characters.length <= 40) return text;
+  const prefix = characters.slice(0, 39).join('');
+  const boundary = prefix.search(/\s+\S*$/u);
+  return `${boundary > 0 ? prefix.slice(0, boundary) : prefix}…`;
+}
 export function reduce(state: BossState, action: BossAction): BossState {
   if (action.type === 'reset') return idle();
   if (action.type === 'spawn') {
@@ -35,7 +42,7 @@ export function reduce(state: BossState, action: BossAction): BossState {
     if (!Number.isSafeInteger(action.maxHp) || action.maxHp < 1 || action.maxHp > 1_000_000 || !action.id || !Number.isFinite(Date.parse(action.ts))) return state;
     const lore = action.lore.filter(item => item.status === 'approved');
     if (!lore.length) return state;
-    return { ...idle(), phase: 'spawning', bossId: action.id, name: lore[0]!.text.slice(0, 40), hp: action.maxHp, maxHp: action.maxHp, attackPool: lore.map(item => ({ loreId: item.id, text: item.text })), startedAt: action.ts };
+    return { ...idle(), phase: 'spawning', bossId: action.id, name: bossLabel(lore[0]!.text), hp: action.maxHp, maxHp: action.maxHp, attackPool: lore.map(item => ({ loreId: item.id, text: item.text })), startedAt: action.ts };
   }
   if (action.type === 'start') return state.phase === 'spawning' ? { ...state, phase: 'fight' } : state;
   if (state.phase !== 'fight') return state;

@@ -264,7 +264,7 @@
       els.hitpop.classList.add('pop-out');
       popHideTimer = setTimeout(() => { els.hitpop.hidden = true; els.hitpop.classList.remove('pop-show', 'pop-out'); }, 320);
     }, 900);
-    floater(heal ? `+${amount}` : `−${amount}${stunned ? ' ×2' : ''}`, str(hit.userName), heal ? 'heal' : crit ? 'crit' : stunned ? 'stun' : '');
+    if (!heal) floater(`−${amount}${stunned ? ' ×2' : ''}`, str(hit.userName), crit ? 'crit' : stunned ? 'stun' : '');
     if (crit) { shake(); tone(180, 260, 'sawtooth', 0.08); } else tone(heal ? 660 : 320, 90);
     const combo = num(hit.combo);
     if (combo !== null && combo >= 2) {

@@ -11,7 +11,7 @@
 - Optional Channel Points Predictions ask whether chat can win within three minutes. They require an eligible Affiliate/Partner channel plus `channel:manage:predictions`; existing authorizations without that scope still support ordinary fights. Reconnect Twitch to grant it if wanted. Predictions report a result only after Twitch accepts settlement; failures direct the operator to Twitch's Predictions dashboard. Real account Predictions have not been acceptance-tested. [Twitch API](https://dev.twitch.tv/docs/api/reference/#create-prediction).
 - Optional synthesized overlay sounds use `/overlay-view?sound`; ordinary OBS mode stays silent. Your browser/OBS audio policy still applies.
 
-Local feature acceptance: cooperative strike/block/stun, failure healing, defeat, Hall of Fame and overlay reload are exercised through an isolated labeled replay fixture. This does not prove real participant engagement or live Channel Points settlement. Earlier demo footage predates these mechanics.
+Cooperative strike/block/stun, failure healing, defeat, Hall of Fame and reload have isolated labeled replay coverage. November 1 owner-channel recordings also exercise live block/stun/attack/heal and saved results. Current repair-round media is identified in [DEMO_SCRIPT.md](DEMO_SCRIPT.md); older videos are historical. This proves exercised operation, not participant enjoyment or eligible-channel Predictions settlement.
 
 Lore Boss listens to Twitch chat (EventSub), uses an LLM to propose recurring community lore (catchphrases, rivalries, legendary moments, quotes), and shows each proposal to a moderator *with the exact chat messages that support it*. Approved lore becomes a raid boss in a transparent OBS browser-source overlay. Viewers fight it with `!attack` and `!heal`, Bits land capped critical hits, the defeat screen crowns MVPs, and an incoming raid gets a "previously on…" recap built from approved lore.
 
@@ -51,7 +51,7 @@ Repeat the attack line until the boss falls to see the defeat/MVP screen. Each v
 
 ## How Codex was used
 
-Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`). Codex turned the project brief into a spec, architecture and milestone plan ([SPEC.md](SPEC.md), [ARCHITECTURE.md](ARCHITECTURE.md), [MILESTONES.md](MILESTONES.md)). It implemented the core: Twitch OAuth/EventSub/Helix, the deterministic boss reducer, the evidence-checked LLM extraction pipeline and the app wiring. Codex wrote guardrails ([guardrails/](guardrails/)) and scoped task cards ([orchestration/cards/](orchestration/cards/)) for smaller UI/doc/review iterations. It delegated those to other coding agents, reviewed their diffs and ran the gates (typecheck, lint, 142 unit tests, 32 Playwright browser tests, CI on Windows/Linux × Node 22/24). The full build record, including which model did which card, is in [CODEX_LOG.md](CODEX_LOG.md).
+Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`). It planned the spec/architecture/milestones and implemented core OAuth/EventSub/Helix, the reducer, evidence-checked extraction and app wiring. Earlier DeepSeek/GLM cards had separate implementer/reviewer passes; Codex completed the cooperative-fight iteration and current repairs directly. Later judge panels are independent evaluations, not a claim every patch received prior independent review. This repair round passes **181 unit tests in 15 files and 37 browser tests**. Dated gates and separately observed Windows/Linux × Node 22/24 CI conclusions are in [CODEX_LOG.md](CODEX_LOG.md). Tests establish exercised behavior, not community appeal. See [guardrails/](guardrails/) and [task cards](orchestration/cards/) for process artifacts.
 
 ## Run it
 
@@ -74,7 +74,7 @@ First boot creates an ignored .env containing a random MOD_TOKEN. Open that file
 6. Open Queue, expand View evidence to inspect stored chat lines and any missing IDs, then approve, edit-and-approve or reject pending items. Evidence is private and scoped to the active session. Reviewed items are immutable. Only approved lore in the active session reaches public output. Enter your intended max HP and spawn the boss.
 7. Add `http://localhost:<PORT>/overlay-view` to OBS as a 1920 x 1080 Browser Source. Background is transparent. `!attack` deals 10 damage; `!heal` restores 5 boss HP, capped at max. Commands share a one-second cooldown per viewer. Bits deal twice their amount, capped at 100 per event. Anonymous Bits never invent an MVP identity. MVPs use actual damage capped by remaining HP.
 
-`!lore` replies in Twitch chat with the session's approved lore, rotating through the items, rate-limited per viewer. Boss names are truncated approved text; attacks use approved text verbatim. Raid recaps are explicitly labeled templates, not claimed as LLM-generated prose.
+`!lore` replies with the session's approved lore, rotating and rate-limiting per viewer. Boss labels use bounded whole-word excerpts with an ellipsis when shortened; the approved attack text remains intact. Raid recaps are labeled templates, not LLM-generated prose. Citation checks validate source IDs and quote substrings; moderators still verify the semantic meaning of non-quotes and edited text.
 
 ## Recording, replay and privacy
 

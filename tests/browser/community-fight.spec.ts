@@ -60,6 +60,33 @@ test('unblocked strike heals the actual fight and survives an overlay reload', a
   await expect(page.locator('#ov-hp-caption')).toContainText('23 / 30');
 });
 
+test('combat notices do not cover lore and healing has one numeric effect', async ({ page, request }) => {
+  await request.post('/api/test-reset', { headers });
+  const status = await (await request.get('/api/status', { headers })).json();
+  await request.post(`/api/lore/${status.lore[0].id}/review`, { headers, data: { status: 'approved' } });
+  await page.clock.install();
+  await page.goto('/overlay-view?preview');
+  await expect(page.locator('#ov-conn')).toHaveText('connected');
+  await request.post('/api/boss/spawn', { headers, data: { maxHp: 30 } });
+  await expect(page.locator('#ov-hp-caption')).toHaveText('30 / 30 HP');
+  await request.post('/api/test-advance', { headers, data: { ms: 15_000 } });
+  await expect(page.locator('#ov-splash')).toBeVisible();
+  await expect(page.locator('#ov-quote')).toBeVisible();
+  const overlaps = async () => page.evaluate(() => {
+    const notice = document.getElementById('ov-splash')!.getBoundingClientRect();
+    const quote = document.getElementById('ov-quote')!.getBoundingClientRect();
+    return notice.left < quote.right && notice.right > quote.left && notice.top < quote.bottom && notice.bottom > quote.top;
+  });
+  expect(await overlaps()).toBe(false);
+  await request.post('/api/test-command', { headers, data: { user: 'Blocker', command: '!block' } });
+  await expect(page.locator('#ov-splash')).toContainText('BLOCKED');
+  expect(await overlaps()).toBe(false);
+  await request.post('/api/test-command', { headers, data: { user: 'Fighter', command: '!attack' } });
+  await request.post('/api/test-command', { headers, data: { user: 'Healer', command: '!heal' } });
+  await expect(page.locator('#ov-hitpop')).toHaveText('+5 HP');
+  await expect(page.locator('.ov-float.heal')).toHaveCount(0);
+});
+
 test('purge warns about all saved history and cancel preserves it', async ({ page, request }) => {
   await page.goto('/');
   await page.getByLabel('Mod token', { exact: true }).fill('test-moderator-token-0123456789');
