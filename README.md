@@ -19,11 +19,11 @@ Lore Boss listens to Twitch chat (EventSub), uses an LLM to propose recurring co
 - Built with: OpenAI Codex. Main Codex session ID: `01a17213-bdd6-76b0-ad36-6c8f9841a293`.
 - Stack: TypeScript (strict), Node 22+, Fastify, ws, SQLite (better-sqlite3), zod, plain browser UI.
 
-These stills come from the current repair-round recording at product commit 9c99a3a (packaged Nov 2 IST, 2026). Actual twitch.tv chat is on the right. This is one broadcaster's rehearsal:
+These stills come from the current repair-round recording at product commit 2190e1c (packaged Nov 2 IST, 2026). Actual twitch.tv chat is on the right. This is one broadcaster's rehearsal:
 
-| Evidence-backed moderation | The boss fight in the OBS overlay | Defeat, MVPs and the `!lore` chat reply |
+| Evidence-backed moderation | The boss fight in the OBS overlay | Defeat, MVPs and native Twitch chat |
 |---|---|---|
-| ![Moderation queue with chat evidence](docs/screenshots/judge02-evidence.png) | ![Overlay boss fight next to Twitch chat](docs/screenshots/judge02-block-stun.png) | ![Defeat screen and !lore reply in Twitch chat](docs/screenshots/judge02-defeat-chat.png) |
+| ![Moderation queue with chat evidence](docs/screenshots/judge03-evidence.png) | ![Overlay boss fight next to Twitch chat](docs/screenshots/judge03-block-stun.png) | ![Defeat screen beside actual Twitch commands](docs/screenshots/judge03-defeat-chat.png) |
 
 ## For judges: try it in 2 minutes, no Twitch or LLM keys needed
 
@@ -51,7 +51,7 @@ Repeat the attack line until the boss falls to see the defeat/MVP screen. Each v
 
 ## How Codex was used
 
-Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`). It planned the spec/architecture/milestones and implemented core OAuth/EventSub/Helix, the reducer, evidence-checked extraction and app wiring. Earlier DeepSeek/GLM cards had separate implementer/reviewer passes; Codex completed the cooperative-fight iteration and current repairs directly. Later judge panels are independent evaluations, not a claim every patch received prior independent review. This repair round passes **193 unit tests in 15 files and 41 browser tests**. Dated gates and separately observed Windows/Linux × Node 22/24 CI conclusions are in [CODEX_LOG.md](CODEX_LOG.md). Tests establish exercised behavior, not community appeal. See [guardrails/](guardrails/) and [task cards](orchestration/cards/) for process artifacts.
+Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`). It planned the spec/architecture/milestones and implemented core OAuth/EventSub/Helix, the reducer, evidence-checked extraction and app wiring. Earlier DeepSeek/GLM cards had separate implementer/reviewer passes; Codex completed the cooperative-fight iteration and ITERATION-07 repairs directly. For ITERATION-08, OpenCode DeepSeek implemented the scoped rejection/damage fixes; Codex independently corrected stale failed-request status and malformed-response handling, then ran joined gates. Later judge panels are independent evaluations, not a claim every patch received prior independent review. This repair round passes **193 unit tests in 15 files and 41 browser tests**. Dated gates and separately observed Windows/Linux × Node 22/24 CI conclusions are in [CODEX_LOG.md](CODEX_LOG.md). Tests establish exercised behavior, not community appeal. See [guardrails/](guardrails/) and [task cards](orchestration/cards/) for process artifacts.
 
 ## Run it
 

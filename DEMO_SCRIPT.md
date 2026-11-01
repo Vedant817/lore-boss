@@ -1,6 +1,16 @@
 # DEMO SCRIPT — current recording and historical shooting plan
 
-## Current repair-round recording — 2026-11-02 IST
+## Current ITERATION-08 recording — 2026-11-02 IST
+
+Use only `C:/Users/vedan/Videos/LoreBoss-judge03-2026-11-02/LoreBoss-demo-judge03.mp4` — **153.6 seconds, 1920×1080 H.264/25fps, 3840 frames, AAC synthetic narration**. Product `2190e1c`; SHA256 `b6a09249ba16a9aff9d381c7acbf6ce62e19700c68021bcb08dad8b648ae5220`. Matching manifest/HANDOFF/SHA256/captions/stills are in that folder; all earlier packages are historical.
+
+Fresh current-version owner-channel capture shows real new labeled messages, successful extraction, stored evidence, moderator edit/approval, block/stun, one numeric hit, heal, defeat/reload and !stats/!lore replies. Eight posts total; no new viewers. This24-second fight dealt30damage with one block; Hall13bosses/490damage are historical solo totals. Separate fresh labeled fixtures show actual validation/API rejection versus empty results and two distinct synthetic fighters dealing20and24stun/combo damage, with approved-lore raid recap/resume. No real participants, Bits, raid, Predictions, broadcast, upload or submission inferred.
+
+The cut includes two authentic original October25 Codex file-change excerpts, rendered with explicit historical/exported-code labels rather than a fabricated IDE. The earlier repair-only/request cards are replaced. Every card/label is font-measured against horizontal/vertical bounds. Narration is local Microsoft Zira, not the owner's voice; tempos, trims and genuine-frame holds are declared. Full encoded decode passes; silence detection−40dB/d3 reports no gap≥3seconds. Static cards are32.92%of runtime. Root visually inspected all five cards and representative product/diagnostic frames; corrected three selected hit still timestamps after observing recorder-start uncertainty, without altering MP4 bytes. Fourteen stills now include rejected and valid-empty banners.
+
+Provider limitation: one readiness request and recorded extraction succeeded; a later live health check again showedHTTP429. Cause/reset unverified; no availability guarantee or provider/model substitution. Remaining observed UI issue: immediately after a valid empty extraction, the Connection panel may retain the preceding error until the next health refresh, even though the service clears its error and the banner reflects no-results. This is a follow-up candidate, not represented as fixed. A local file-only Windows ASR check returned39noisy phrases; it does not establish intelligibility, and no complete human listening/playback claim is made.
+
+## Historical second-panel recording — 2026-11-02 IST
 
 Use only `C:/Users/vedan/Videos/LoreBoss-judge02-2026-11-02/LoreBoss-demo-judge02.mp4` — **145.86 seconds, 1920×1080 H.264, 3645 frames, AAC locally synthesized narration**. Product commit `9c99a3a`; SHA256 `47fba546424f12c73d4ea49dc9b0416853f7863101d986cac9c4317f90da4e9d`. The matching HANDOFF, manifest, captions, twelve screenshots and hash are in that folder. Older packages are historical.
 

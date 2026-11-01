@@ -42,6 +42,8 @@ The full card-by-card record is in `CODEX_LOG.md`.
 
 Stack: TypeScript (strict), Node 22+, Fastify, ws, SQLite via better-sqlite3, zod, a plain-JS operator UI and overlay, Twitch EventSub/Helix, OBS browser source. Inference accepts explicitly configured local, Groq or Modal OpenAI-compatible endpoints, not arbitrary hosted providers. We exercised Groq (`openai/gpt-oss-20b`). There is no automatic provider/model fallback.
 
+The latest ITERATION-08 implementation used OpenCode DeepSeek on its explicitly selected free route, followed by Codex corrections for stale failed requests and malformed API responses. This is distinct from the earlier user-approved Modal assistance; no route substitution is implied.
+
 ## Challenges we ran into
 
 - **Checking AI claims about real people.** Schema, source-ID, quote/author and blocked-text checks reject mechanically unsupported output. They cannot prove every non-quote's meaning; the moderator reviews the actual cited text before approving or editing.
@@ -80,6 +82,6 @@ Open http://localhost:3107 and unlock with the public fixture-only token `test-m
 
 ## Owner checklist (not part of the submission text)
 
-1. Upload only `C:/Users/vedan/Videos/LoreBoss-judge02-2026-11-02/LoreBoss-demo-judge02.mp4` — **145.86 seconds, 1920×1080 H.264, 3645 frames, AAC locally synthesized narration**. Product commit `9c99a3a`; SHA256 `47fba546424f12c73d4ea49dc9b0416853f7863101d986cac9c4317f90da4e9d`. Match HANDOFF/manifest/SHA256.txt before uploading publicly to YouTube and replacing the URL placeholder. Earlier video packages are historical. Narration is synthetic; live owner-channel footage, separately labeled replay, and authentic rendered Codex excerpts are documented in DEMO_SCRIPT.md. You own publication and submission; neither is claimed here.
+1. Upload only `C:/Users/vedan/Videos/LoreBoss-judge03-2026-11-02/LoreBoss-demo-judge03.mp4` — **153.6 seconds, 1920×1080 H.264/25fps, 3840 frames, AAC synthetic narration**. Product `2190e1c`; SHA256 `b6a09249ba16a9aff9d381c7acbf6ce62e19700c68021bcb08dad8b648ae5220`. Match HANDOFF/manifest/SHA256.txt, publish publicly on YouTube and replace the URL placeholder. All older packages are historical. Native Twitch, synthetic replay/diagnostics, synthetic narration and authentic rendered original-build excerpts are documented in DEMO_SCRIPT.md. You own publication and submission; neither is claimed here.
 2. Complete all owner fields: 29286 submitter type; 29287 country; 29292 new-skills survey; 29293 future-Codex-use survey; 29294 age-of-majority, 29295 eligible-jurisdiction and 29296 non-employee attestations. These are personal answers. Project fields 29288 (repository), 29289 (session), 29290 (technology) and 29291 (community use) have draft material above; verify the current form before entering it.
 3. Paste the sections above, add 3–5 screenshots (overlay fight, evidence queue, defeat/MVP), then submit before the deadline.
