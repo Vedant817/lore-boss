@@ -133,12 +133,9 @@
 
   function floater(text, who, kind) {
     const node = el('span', { class: `ov-float ${kind}` }, el('span', { class: 'who', text: who || '' }), text);
-    // Decorative scatter around the HP bar; the value itself is the server's.
-    node.style.left = `${120 + Math.floor(Math.random() * 640)}px`;
-    node.style.top = `${200 + Math.floor(Math.random() * 120)}px`;
-    els.floaters.append(node);
+    // One latest attribution cue stays inside its reserved lane; numeric feedback is separate.
+    els.floaters.replaceChildren(node);
     setTimeout(() => node.remove(), 1500);
-    while (els.floaters.children.length > 24) els.floaters.firstChild.remove();
   }
 
   function confetti() {

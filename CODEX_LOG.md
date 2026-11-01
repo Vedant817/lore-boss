@@ -358,3 +358,7 @@ Shared browser View evidence clicks timed out twice15000ms; switched to Playwrig
 ## 2026-11-02 — fourth panel complete
 
 Independent scores:Grok14/20,Codex14/20,OpenCode13/20;mean13.67. Authored reports preserved. Root validation/objections in docs/reviews/JUDGE-PANEL-04-summary.md;four-round interactive comparison in C:/Users/vedan/Videos/LoreBoss-judge04-panel-results. Codex reran typecheck/lint/221unit tests;no judge continuous playback/listening. Confirmed decorative-floater collision and supported sticky fighter-identity improvement will receive a separate bounded repair. Charge-scene omission disproven with actual26.0/27.2s frames;metadata UTF-8 corruption did not reproduce. Audience study stillNOT RUN;owner publication/form untouched. No perfect score or official finalist outcome claimed.
+
+## 2026-11-02 — ITERATION-10 presentation repair
+
+Root reproduced2browser failures before fixing the confirmed cue collision and mobile identity loss. One latest attributed cue now occupies a48px reserved flow lane with opacity-only fade;Viewer column stays visible during horizontal scrolling. Primary numeric feedback/game rules/history/provider behavior unchanged. Focused2passed;joined typecheck/lint/unit/build/guardrails/full browser PASS:221unit/15files,47browser(26.4s). README clarifies six-pattern string-scan scope. New live-served overlay assets hash-match source;no backend restart/session replacement. Groq still reports429cooldown;no retries or reliability claim. Fresh media remains separate work.

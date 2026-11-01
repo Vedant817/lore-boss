@@ -456,6 +456,15 @@ a { color: var(--lb-primary-hi); }
 #hall-fighters { min-width: 0; overflow-x: auto; }
 .hall-table th, .hall-table td { text-align: left; padding: var(--lb-sp-2) var(--lb-sp-3); border-bottom: 1px solid var(--lb-surface2); }
 .hall-table th { font: var(--lb-caption-13); color: var(--lb-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+/* Keep identity next to statistics while the operator scrolls a narrow viewport. */
+.hall-table th:nth-child(2), .hall-table td:nth-child(2) {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--lb-surface);
+  max-width: 16ch;
+  overflow-wrap: anywhere;
+}
 .hall-list { padding-left: 20px; }
 .hall-list li { margin: var(--lb-sp-2) 0; overflow-wrap: anywhere; }
 
@@ -503,25 +512,27 @@ a { color: var(--lb-primary-hi); }
 
 .ov-commands { font: var(--lb-caption-13); color: var(--lb-muted); letter-spacing: 0.06em; }
 
-.ov-floaters { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.ov-floaters { position: relative; width: min(920px, 100%); height: var(--lb-sp-12); flex-shrink: 0; pointer-events: none; overflow: hidden; }
 .ov-float {
-  position: absolute;
-  font: var(--lb-h1-40);
+  display: flex;
+  align-items: center;
+  gap: var(--lb-sp-3);
+  height: 100%;
+  font: var(--lb-h2-28);
   font-weight: 800;
   color: var(--lb-text);
   text-shadow: 0 2px 0 var(--lb-bg), 0 0 12px var(--lb-bg);
   white-space: nowrap;
   animation: lb-float 1400ms ease-out forwards;
 }
-.ov-float .who { display: block; font: var(--lb-caption-13); font-weight: 700; color: var(--lb-primary-hi); text-transform: none; }
-.ov-float.crit { color: var(--lb-gold); font-size: 56px; }
+.ov-float .who { min-width: 0; max-width: 70%; overflow-wrap: anywhere; white-space: normal; font: var(--lb-caption-13); font-weight: 700; color: var(--lb-primary-hi); text-transform: none; }
+.ov-float.crit { color: var(--lb-gold); }
 .ov-float.heal { color: var(--lb-success); }
 .ov-float.stun { color: var(--lb-gold); }
 @keyframes lb-float {
-  0% { opacity: 0; transform: translateY(12px) scale(0.8); }
-  15% { opacity: 1; transform: translateY(0) scale(1.15); }
-  30% { transform: translateY(-8px) scale(1); }
-  100% { opacity: 0; transform: translateY(-120px) scale(1); }
+  0% { opacity: 0; }
+  15%, 70% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 .ov-notice-slot { width: min(920px, 100%); min-height: var(--lb-sp-12); flex-shrink: 0; }

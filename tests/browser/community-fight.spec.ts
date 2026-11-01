@@ -87,6 +87,33 @@ test('combat notices do not cover lore and healing has one numeric effect', asyn
   await expect(page.locator('.ov-float.heal')).toHaveCount(0);
 });
 
+test('distinct fight hits keep only the latest attributed cue in a reserved lane', async ({ page, request }) => {
+  await request.post('/api/test-reset', { headers });
+  const status = await (await request.get('/api/status', { headers })).json();
+  await request.post(`/api/lore/${status.lore[0].id}/review`, { headers, data: { status: 'approved' } });
+  await page.clock.install();
+  await page.goto('/overlay-view?preview');
+  await expect(page.locator('#ov-conn')).toHaveText('connected');
+  await request.post('/api/boss/spawn', { headers, data: { maxHp: 100 } });
+  await request.post('/api/test-advance', { headers, data: { ms: 15_000 } });
+  await request.post('/api/test-command', { headers, data: { user: 'Blocker', command: '!block' } });
+  for (const user of ['First Fighter', 'Second Fighter With Long Name']) {
+    await request.post('/api/test-command', { headers, data: { user, command: '!attack' } });
+  }
+  const cues = page.locator('#ov-floaters .ov-float');
+  await expect(cues).toHaveCount(1);
+  await expect(cues.locator('.who')).toHaveText('Second Fighter With Long Name');
+  await expect(page.locator('#ov-quote')).toBeVisible();
+  const intersects = await page.evaluate(() => {
+    const lane = document.getElementById('ov-floaters')!.getBoundingClientRect();
+    return ['#ov-boss-panel', '#ov-quote', '.ov-top-damage'].some(selector => {
+      const area = document.querySelector(selector)!.getBoundingClientRect();
+      return lane.left < area.right && lane.right > area.left && lane.top < area.bottom && lane.bottom > area.top;
+    });
+  });
+  expect(intersects).toBe(false);
+});
+
 test('purge warns about all saved history and cancel preserves it', async ({ page, request }) => {
   await page.goto('/');
   await page.getByLabel('Mod token', { exact: true }).fill('test-moderator-token-0123456789');
