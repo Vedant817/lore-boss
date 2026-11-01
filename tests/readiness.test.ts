@@ -61,6 +61,28 @@ describe('readiness and inference probe', () => {
       expect(runtime.health().error).toBe('Twitch subscription revoked; reconnect Twitch');
     } finally { runtime.close(); vi.useRealTimers(); }
   });
+  it('rejects an invalid extraction with a safe 409 while a valid empty result stays 200', async () => {
+    const { app, runtime } = await setup();
+    runtime.store.startSession('extraction-outcome', 'live', 'channel-1');
+    runtime.sessionId = 'extraction-outcome';
+    runtime.lore.add(chat()); runtime.lore.add(chat({ id: 'm2' }));
+    const request = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(response('{"candidates":[{"kind":"quote","text":"fabricated line","evidence_message_ids":["m1","not-in-buffer"],"author_user_id":null}]}'))
+      .mockResolvedValueOnce(response('{"candidates":[]}'));
+    runtime.llm = new LlmClient('http://localhost:8080/v1', 'test-model', '', request);
+    const rejected = await app.inject({ method: 'POST', url: '/api/extract', headers });
+    expect(rejected.statusCode).toBe(409);
+    expect(rejected.json().error).toMatch(/rejected/i);
+    expect(rejected.json().error).toMatch(/evidence/i);
+    expect(rejected.body).not.toContain('fabricated line');
+    expect(rejected.body).not.toContain('not-in-buffer');
+    expect(runtime.store.listLore()).toEqual([]);
+    expect((await app.inject({ url: '/api/status', headers })).json().lore).toEqual([]);
+    const empty = await app.inject({ method: 'POST', url: '/api/extract', headers });
+    expect(empty.statusCode).toBe(200);
+    expect(empty.json()).toEqual({ items: [] });
+    expect(runtime.health().error).toBeNull();
+  });
   it('allows inference settings during a session while rejecting changed Twitch credentials', async () => {
     const { app, runtime } = await setup({ TWITCH_CLIENT_ID: 'existing-client' });
     runtime.store.startSession('active-settings', 'live', 'channel-1'); runtime.sessionId = 'active-settings';

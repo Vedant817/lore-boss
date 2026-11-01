@@ -132,3 +132,108 @@ it('accepts a null author from strict mode and still validates evidence', () => 
   expect(validateCandidates({ candidates: [{ ...item, kind: 'catchphrase', author_user_id: null }] }, buffer, [])).toEqual([{ kind: 'catchphrase', text: item.text, authorUserId: null, evidenceMessageIds: ['m1', 'm2'] }]);
   expect(validateCandidates({ candidates: [{ ...item, author_user_id: null, evidence_message_ids: ['m1', 'invented'] }] }, buffer, [])).toEqual([]);
 });
+// ITERATION-08: validateCandidates keeps its all-or-nothing Candidate[] contract, while
+// LoreService.extract must surface a fixed rejection category instead of reporting an
+// invalid proposal as a successful empty result.
+type ExtractionOptions = { messages?: typeof buffer; blocked?: string[]; before?: (service: LoreService) => void };
+const driveExtraction = async (raw: unknown, options: ExtractionOptions = {}) => {
+  const store = new Store(':memory:');
+  const sessionId = 'extraction-outcome';
+  store.startSession(sessionId, 'live', 'channel-1');
+  const request = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(raw) } }] })));
+  const service = new LoreService(store, () => new LlmClient('http://localhost:8080/v1', 'test-model', '', request), () => sessionId, options.blocked ?? []);
+  for (const message of options.messages ?? buffer) service.add(message);
+  options.before?.(service);
+  const error = await service.extract().then(() => null, (failure: unknown) => failure);
+  return { store, service, error };
+};
+const rejectionCases: Array<[string, unknown, ExtractionOptions, RegExp]> = [
+  ['schema', null, {}, /schema/i],
+  ['evidence', { candidates: [{ ...item, evidence_message_ids: ['m1', 'invented-evidence'] }] }, {}, /evidence/i],
+  ['author', { candidates: [{ ...item, author_user_id: 'invented-author' }] }, {}, /author/i],
+  ['quote', { candidates: [{ ...item, text: 'invented quote' }] }, {}, /quote/i],
+  ['blocked', { candidates: [{ ...item, kind: 'moment', text: 'banana lore' }] }, { blocked: ['banana'], messages: [chat({ text: 'the council has spoken' }), chat({ id: 'm2', text: 'all rise for the council' })] }, /blocked/i],
+];
+it.each(rejectionCases)('surfaces a safe %s rejection instead of an empty success', async (_label, raw, options, category) => {
+  const { store, service, error } = await driveExtraction(raw, options);
+  try {
+    expect(error).toBeInstanceOf(Error);
+    const rejection = error as Error;
+    expect(rejection.message).toMatch(category);
+    expect(rejection.message).toMatch(/no lore was created/i);
+    expect(service.error).toBe(rejection.message);
+    expect(store.listLore()).toEqual([]);
+    const surface = [rejection.message, rejection.stack ?? '', String(rejection), JSON.stringify(rejection), String(rejection.cause)].join('\n');
+    for (const rawFragment of ['invented', 'banana lore', 'candidates', 'evidence_message_ids']) expect(surface, rawFragment).not.toContain(rawFragment);
+  } finally { store.close(); }
+});
+it('rejects a mixed valid and unsupported proposal without persisting the valid candidate', async () => {
+  const mixed = { candidates: [item, { ...item, kind: 'moment', text: 'a community moment', evidence_message_ids: ['m1', 'invented-evidence'] }] };
+  const { store, service, error } = await driveExtraction(mixed);
+  try {
+    expect((error as Error).message).toMatch(/evidence/i);
+    expect(service.error).toMatch(/evidence/i);
+    expect(store.listLore()).toEqual([]);
+  } finally { store.close(); }
+});
+it('keeps a valid empty proposal successful and clears a prior lore error', async () => {
+  const { store, service, error } = await driveExtraction({ candidates: [] }, { before: service => { service.error = 'LLM returned HTTP 500'; } });
+  try {
+    expect(error).toBeNull();
+    expect(service.error).toBeNull();
+    expect(store.listLore()).toEqual([]);
+  } finally { store.close(); }
+});
+it('discards a stale invalid response before validation and keeps the prior error', async () => {
+  const store = new Store(':memory:'); store.startSession('stale-generation', 'live', 'channel-1');
+  let release!: (response: Response) => void;
+  const request = vi.fn<typeof fetch>().mockImplementation(() => new Promise(resolve => { release = resolve; }));
+  const service = new LoreService(store, () => new LlmClient('http://localhost:8080/v1', 'test-model', '', request), () => 'stale-generation', []);
+  buffer.forEach(message => service.add(message));
+  service.error = 'LLM returned HTTP 500';
+  const extraction = service.extract();
+  service.clear();
+  release(new Response(JSON.stringify({ choices: [{ message: { content: '{"candidates":[{"kind":"moment"}]}' } }] })));
+  expect(await extraction).toEqual([]);
+  expect(service.error).toBe('LLM returned HTTP 500');
+  expect(store.listLore()).toEqual([]);
+  store.close();
+});
+it('discards a stale invalid response when the session changed before validation', async () => {
+  const store = new Store(':memory:'); store.startSession('first-session', 'live', 'channel-1'); store.startSession('second-session', 'live', 'channel-1');
+  let sessionId = 'first-session';
+  let release!: (response: Response) => void;
+  const request = vi.fn<typeof fetch>().mockImplementation(() => new Promise(resolve => { release = resolve; }));
+  const service = new LoreService(store, () => new LlmClient('http://localhost:8080/v1', 'test-model', '', request), () => sessionId, []);
+  buffer.forEach(message => service.add(message));
+  const extraction = service.extract();
+  sessionId = 'second-session';
+  release(new Response(JSON.stringify({ choices: [{ message: { content: '{"candidates":[{"kind":"moment"}]}' } }] })));
+  expect(await extraction).toEqual([]);
+  expect(service.error).toBeNull();
+  expect(store.listLore()).toEqual([]);
+  store.close();
+});
+it.each(['generation', 'session'] as const)('discards stale transport failures after %s changes without overwriting newer status', async change => {
+  const store = new Store(':memory:'); store.startSession('failure-first', 'live', 'channel-1');
+  let sessionId = 'failure-first';
+  let release!: (response: Response) => void;
+  const request = vi.fn<typeof fetch>().mockImplementationOnce(() => new Promise(resolve => { release = resolve; }))
+    .mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: '{"candidates":[]}' } }] })));
+  const client = new LlmClient('http://localhost:8080/v1', 'test-model', '', request);
+  const service = new LoreService(store, () => client, () => sessionId, []);
+  buffer.forEach(message => service.add(message));
+  try {
+    const extraction = service.extract();
+    if (change === 'generation') service.invalidateExtraction();
+    else { store.startSession('failure-second', 'live', 'channel-1'); sessionId = 'failure-second'; }
+    service.error = 'Newer extraction status';
+    release(new Response('{}', { status: 500 }));
+    await expect(extraction).resolves.toEqual([]);
+    expect(service.error).toBe('Newer extraction status');
+    expect(store.listLore()).toEqual([]);
+    await expect(service.extract()).resolves.toEqual([]);
+    expect(service.error).toBeNull();
+    expect(request).toHaveBeenCalledTimes(2);
+  } finally { store.close(); }
+});

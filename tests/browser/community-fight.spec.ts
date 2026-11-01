@@ -104,3 +104,45 @@ test('purge warns about all saved history and cancel preserves it', async ({ pag
   expect(cleared.lore).toEqual([]);
   expect(cleared.fighters).toEqual([]);
 });
+
+// ITERATION-08: a stunned hit already carries the reducer's doubled, clamped amount. The
+// overlay must show that real HP loss once, with attribution, and never a second number or ×2.
+test('a stunned hit reports its real doubled damage once and keeps attribution', async ({ page, request }) => {
+  await request.post('/api/test-advance', { headers, data: { ms: 15_000 } });
+  await page.goto('/overlay-view');
+  await expect(page.locator('#ov-hp-caption')).toHaveText('30 / 30 HP');
+  await request.post('/api/test-command', { headers, data: { user: 'Blocker', command: '!block' } });
+  await expect(page.locator('#ov-stunned')).toBeVisible();
+  await request.post('/api/test-command', { headers, data: { user: 'Stun Fighter', command: '!attack' } });
+  await expect(page.locator('#ov-hp-caption')).toHaveText('10 / 30 HP');
+  await expect(page.locator('#ov-hitpop')).toHaveText('−20');
+  const attributed = page.locator('#ov-floaters .ov-float.stun').filter({ hasText: 'Stun Fighter' });
+  await expect(attributed).toHaveCount(1);
+  await expect(attributed).toContainText('STUN');
+  await expect(attributed).not.toContainText(/\d/);
+  await expect(page.locator('#ov-hitpop')).not.toContainText('×2');
+  const status = await (await request.get('/api/status', { headers })).json();
+  expect(status.boss.hp).toBe(10);
+});
+
+test('bounded finishing damage and a Bits crit each show one honest number', async ({ page, request }) => {
+  await request.post('/api/test-reset', { headers });
+  const status = await (await request.get('/api/status', { headers })).json();
+  await request.post(`/api/lore/${status.lore[0].id}/review`, { headers, data: { status: 'approved' } });
+  await request.post('/api/boss/spawn', { headers, data: { maxHp: 5 } });
+  await page.goto('/overlay-view');
+  await expect(page.locator('#ov-hp-caption')).toHaveText('5 / 5 HP');
+  await request.post('/api/test-command', { headers, data: { user: 'Finisher', command: '!attack' } });
+  await expect(page.locator('#ov-defeated')).toBeVisible();
+  await expect(page.locator('#ov-hitpop')).toHaveText('−5'); // the real remaining-HP delta, not base 10
+  const finisher = page.locator('#ov-floaters .ov-float').filter({ hasText: 'Finisher' });
+  await expect(finisher).toHaveCount(1);
+  await expect(finisher).not.toContainText(/\d/);
+  // Overlay protocol shape for a reducer-clamped Bits crit: the amount is the actual HP delta.
+  await request.post('/api/test-overlay', { headers, data: { v: 1, type: 'boss.hit', amount: 5, crit: true, cause: 'cheer', userName: 'Bit Boss', combo: 0, stunned: false } });
+  await expect(page.locator('#ov-hitpop')).toHaveText('CRIT! −5 (bits)');
+  const bits = page.locator('#ov-floaters .ov-float.crit').filter({ hasText: 'Bit Boss' });
+  await expect(bits).toHaveCount(1);
+  await expect(bits).toContainText('BITS');
+  await expect(bits).not.toContainText(/\d/);
+});

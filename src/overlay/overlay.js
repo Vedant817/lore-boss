@@ -264,7 +264,9 @@
       els.hitpop.classList.add('pop-out');
       popHideTimer = setTimeout(() => { els.hitpop.hidden = true; els.hitpop.classList.remove('pop-show', 'pop-out'); }, 320);
     }, 900);
-    if (!heal) floater(`−${amount}${stunned ? ' ×2' : ''}`, str(hit.userName), crit ? 'crit' : stunned ? 'stun' : '');
+    // The server already sends the doubled, HP-clamped amount. Keep one numeric effect (the
+    // popup) and let the floater carry real attribution plus a short nonnumeric cue.
+    if (!heal) floater(crit ? 'BITS' : stunned ? 'STUN' : 'HIT', str(hit.userName), crit ? 'crit' : stunned ? 'stun' : '');
     if (crit) { shake(); tone(180, 260, 'sawtooth', 0.08); } else tone(heal ? 660 : 320, 90);
     const combo = num(hit.combo);
     if (combo !== null && combo >= 2) {

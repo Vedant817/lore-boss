@@ -262,3 +262,37 @@ test('a 200 non-JSON or wrong-shape status response never fakes freshness', asyn
   expect(await page.locator('#freshness').textContent()).toBe(stale);
   await page.unrouteAll();
 });
+
+// ITERATION-08: an invalid proposal must use the existing failure flow, while a genuinely
+// empty proposal gets honest no-results copy instead of a success banner.
+test('manual extraction reports a real rejection and honest no-results, never a fake success', async ({ page }) => {
+  await unlock(page);
+  let calls = 0;
+  await page.route('**/api/extract', (route) => {
+    calls += 1;
+    return calls === 1
+      ? route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ error: 'LLM lore proposal rejected: evidence messages were missing or insufficient; no lore was created.' }) })
+      : route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }) });
+  });
+  const extract = page.getByRole('button', { name: 'Extract lore now', exact: true });
+  await extract.click();
+  await expect(page.locator('#banner')).toHaveClass('banner banner-danger');
+  await expect(page.locator('#banner')).toContainText('Extraction failed');
+  await expect(page.locator('#banner')).toContainText('rejected');
+  await expect(page.locator('#banner')).not.toContainText('Extraction finished');
+  await extract.click();
+  await expect(page.locator('#banner')).toHaveClass('banner banner-info');
+  await expect(page.locator('#banner')).toContainText('no supported lore');
+  await expect(page.locator('#banner')).not.toContainText('queue updated');
+  await page.unrouteAll();
+});
+
+test('malformed extraction results cannot masquerade as valid no-results', async ({ page }) => {
+  await unlock(page);
+  await page.route('**/api/extract', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ unexpected: true }) }));
+  await page.getByRole('button', { name: 'Extract lore now', exact: true }).click();
+  await expect(page.locator('#banner')).toHaveClass('banner banner-danger');
+  await expect(page.locator('#banner')).toContainText('invalid response');
+  await expect(page.locator('#banner')).not.toContainText('no supported lore');
+  await expect(page.getByRole('button', { name: 'Extract lore now', exact: true })).toBeEnabled();
+});

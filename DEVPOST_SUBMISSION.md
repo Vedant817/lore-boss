@@ -36,7 +36,7 @@ Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`)
 - turned the brief into a spec, architecture, milestone plan, design system (from supplied reference screenshots) and **guardrails** (no hallucinated APIs, so every external call cites its official doc URL; no fake data; replay must be a labeled flag; tests required);
 - implemented the core itself: Twitch OAuth with identity/scope validation, the EventSub WebSocket client with reconnect and durable de-duplication, the **pure deterministic boss reducer**, the evidence-checked LLM extraction pipeline (zod-validated, prompt-injection-aware) and the Fastify app wiring;
 - delegated earlier scoped UI/docs/review cards to OpenCode DeepSeek and GLM with distinct implementer/reviewer passes. Codex completed the later cooperative-fight iteration and current repairs directly; independent judge reviews followed, not every patch received a prior independent review;
-- verified changes with strict typecheck, ESLint, unit tests, isolated Playwright browser checks and guardrails. The current repair round passes **181 unit tests in 15 files and 37 browser tests**. Dated local totals and separately observed Windows/Linux × Node 22/24 CI conclusions are in CODEX_LOG.md. Passing gates are engineering evidence, not proof of audience enjoyment.
+- verified changes with strict typecheck, ESLint, unit tests, isolated Playwright browser checks and guardrails. The current repair round passes **193 unit tests in 15 files and 41 browser tests**. Dated local totals and separately observed Windows/Linux × Node 22/24 CI conclusions are in CODEX_LOG.md. Passing gates are engineering evidence, not proof of audience enjoyment.
 
 The full card-by-card record is in `CODEX_LOG.md`.
 

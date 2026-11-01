@@ -51,7 +51,7 @@ Repeat the attack line until the boss falls to see the defeat/MVP screen. Each v
 
 ## How Codex was used
 
-Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`). It planned the spec/architecture/milestones and implemented core OAuth/EventSub/Helix, the reducer, evidence-checked extraction and app wiring. Earlier DeepSeek/GLM cards had separate implementer/reviewer passes; Codex completed the cooperative-fight iteration and current repairs directly. Later judge panels are independent evaluations, not a claim every patch received prior independent review. This repair round passes **181 unit tests in 15 files and 37 browser tests**. Dated gates and separately observed Windows/Linux × Node 22/24 CI conclusions are in [CODEX_LOG.md](CODEX_LOG.md). Tests establish exercised behavior, not community appeal. See [guardrails/](guardrails/) and [task cards](orchestration/cards/) for process artifacts.
+Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`). It planned the spec/architecture/milestones and implemented core OAuth/EventSub/Helix, the reducer, evidence-checked extraction and app wiring. Earlier DeepSeek/GLM cards had separate implementer/reviewer passes; Codex completed the cooperative-fight iteration and current repairs directly. Later judge panels are independent evaluations, not a claim every patch received prior independent review. This repair round passes **193 unit tests in 15 files and 41 browser tests**. Dated gates and separately observed Windows/Linux × Node 22/24 CI conclusions are in [CODEX_LOG.md](CODEX_LOG.md). Tests establish exercised behavior, not community appeal. See [guardrails/](guardrails/) and [task cards](orchestration/cards/) for process artifacts.
 
 ## Run it
 

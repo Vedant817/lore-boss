@@ -391,8 +391,11 @@
     bumpEpoch();
     setBusy(true);
     try {
-      await api('/api/extract', { method: 'POST', body: {} });
-      note('Extraction finished — queue updated.', 'success');
+      const result = await api('/api/extract', { method: 'POST', body: {} });
+      if (!result || !Array.isArray(result.items)) throw new Error('Extraction returned an invalid response; refresh and try again.');
+      // A valid empty proposal is a real no-results outcome; do not invent a queue update.
+      const found = result.items.length;
+      note(found > 0 ? 'Extraction finished — queue updated.' : 'Extraction finished — no supported lore this time. Queue unchanged.', found > 0 ? 'success' : 'info');
       await loadStatus();
     } catch (err) {
       if (err.status === 409 && err.message === 'Lore extraction already running') {
