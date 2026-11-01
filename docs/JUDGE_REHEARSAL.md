@@ -1,5 +1,13 @@
 # Judge rehearsal: actual results
 
+## Current-version video capture — 2026-11-01
+
+Fresh recording at product commit ed713e6 is now `C:/Users/vedan/Videos/LoreBoss-latest-2026-11-01/LoreBoss-demo-latest.mp4` (133.16s, 1920×1080, H.264/25fps, silent/captioned). Old October29 media is preserved and no footage from it is reused. This supersedes earlier statements that the enhancement has no updated recording.
+
+The renewed recording request authorized a new bounded owner-channel rehearsal: six actual posts (labeled notice, !block, !attack, !heal, !attack, !stats). Actual UI extraction succeeded on existing owner chat; expanded two-message evidence and approved the pending catchphrase through real controls, then spawned25HP. A charging strike was blocked; stun attack25→5, heal5→10, finishing attack10→0. The23-second fight saved30damage and one block, no landed strikes; reload preserved defeat. Hall11bosses/430damage are historical totals. Desktop and390px mobile captures are real app pages. Separate isolated3192 REPLAY footage shows synthetic distinct-user10+12damage and raid template recap/resume; no real participants/Bits/raid are implied. Real source remained live3137; no second live Runtime, purge, disconnect, restart or Predictions action occurred. Browser closed and fixture server stopped; live auth/EventSub remained connected and error null afterward.
+
+Fresh typecheck/lint/unit/guardrails passed: **Test Files15passed(15), Tests179passed(179)**. The36-browser result is the preceding joined run at the same product commit, not a rerun for this media-only task. ffprobe validated final encoding/duration/framecount3329; full decode succeeded and extracted final frames were inspected. Public package secret scan found no leaks. Video publication, real viewers/Bits/raid, OBS broadcast, eligible-channel Predictions and Devpost remain outside this capture.
+
 ## Latest owner-channel walkthrough — 2026-11-01
 
 After the owner reauthorized Twitch, Codex used the actual operator UI and connected live instance on port 3137. This was one broadcaster's rehearsal, **not a multi-viewer study**. Three clearly labeled lore messages and five commands were sent to the owner's channel under the existing posting approval. Official APIs: [Token Validate](https://dev.twitch.tv/docs/authentication/validate-tokens/) and [Send Chat Message](https://dev.twitch.tv/docs/api/reference/#send-chat-message).

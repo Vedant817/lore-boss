@@ -1,4 +1,12 @@
-# DEMO SCRIPT — shooting plan, target ~165 s (official limit 3:00)
+# DEMO SCRIPT — current recording and original shooting plan
+
+## Current recording — 2026-11-01
+
+The October29 video at adc9e96 is superseded for showing current functionality by `C:/Users/vedan/Videos/LoreBoss-latest-2026-11-01/LoreBoss-demo-latest.mp4`: **133.16 seconds, 1920×1080 H.264, 25fps, silent/captioned**, freshly captured at product commit ed713e6. No old footage is reused. The directory includes measured captions, final-video screenshots, description, manifest and SHA256; the old package is preserved.
+
+The cut shows live owner-channel connection, successful Groq extraction from existing owner rehearsal messages, evidence expansion, real approval/spawn, charging lore strike, block/stun, attack/heal, defeat/reload, and persistent desktop/mobile Hall. Distinct-user combo and raid recap footage is separately and continuously labeled **SYNTHETIC REPLAY**. Build cards render current tracked Git/source and Codex attribution, labeled **NOT LIVE CODING**. No real Bits, incoming raid, participants, public broadcast or Channel Points acceptance is claimed. Nothing was uploaded or submitted; those remain owner actions.
+
+## Original shooting plan (historical, before the cooperative-fight enhancement)
 
 Official requirement (Devpost fetch, 2026-10-28): a max-3-minute video showing the project working on Twitch and how Codex was used, published public on YouTube. This plan totals **165 seconds**, leaving headroom under the limit.
 

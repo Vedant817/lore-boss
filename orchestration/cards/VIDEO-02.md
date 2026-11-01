@@ -1,0 +1,9 @@
+# VIDEO-02 — current-version demo recording
+
+Owner: Codex. User requests a replacement for the old October 29 video, using the latest version as before.
+
+Allowed repository writes: this card, CODEX_LOG.md, DEMO_SCRIPT.md, docs/JUDGE_REHEARSAL.md. No product, test, configuration or credential changes. Capture/build scripts, private receipts and intermediate media stay in an isolated OS-temp directory; deliver the verified public-safe package under a new dated Videos directory, preserving the prior package.
+
+Record current ed713e6 UI and real owner-channel combat through the existing live3137 instance. Inspect actual evidence via UI; approval and spawn use real controls. Current request renews the previously approved bounded owner-channel rehearsal for this new recording: at most eight public posts, only labeled rehearsal notice and !block/!attack/!heal/!stats commands. Do not purchase Bits, initiate raids, enable Predictions, contact participants, purge/disconnect/restart live, or upload/submit. The previous QA-01 no-further-posts restriction applied to its completed eight-message run, not this newly requested recording.
+
+Show new lore-strike/block/stun mechanics, defeat/reload, persistent Hall and mobile layout. Additional combos/raid footage may use an isolated REPLAY fixture, continuously labeled synthetic with no real viewers/Bits/raid. Recorded build cards must derive from current tracked files and be labeled not live coding. Preserve real/synthetic boundaries, old media and OAuth state. Exclude secrets and personal browser/profile UI; no credentials in tool arguments/output/media. Verify actual final file with ffprobe, inspect extracted frames, include measured captions/provenance/hash and scan public text assets. Run mandatory typecheck/lint/unit gates before completion; no new tests needed for media/docs-only work. Report limitations and actual artifact path.
