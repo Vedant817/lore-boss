@@ -18,3 +18,5 @@ Node 22, TypeScript strict, Fastify, `ws`, better-sqlite3, zod, vitest, plain HT
 
 ## Deliverable at the end
 Repo runnable by a judge with README steps; demo video < 3 min; DEVPOST_SUBMISSION.md filled in. Start with Milestone M0 in MILESTONES.md; propose the task cards first and wait for my "go".
+
+Current cooperative-fight rule: cheer base damage is min(100, bits×2); stun doubles that base, then remaining HP clamps actual damage. This clarifies the pre-stun cap; no balance change is made by ITERATION-09.

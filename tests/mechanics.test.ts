@@ -79,3 +79,13 @@ describe('finisher', () => {
     expect(s.phase).toBe('defeated'); expect(s.finisher).toBeNull();
   });
 });
+
+describe('stunned Bits damage', () => {
+  it.each([{ hp: 500, remaining: 300, damage: 200 }, { hp: 150, remaining: 0, damage: 150 }])('caps base damage before stun, then clamps to remaining HP ($hp HP)', ({ hp, remaining, damage }) => {
+    const charging = reduce(fight(hp), { type: 'strike', id: 'bits-strike', at: T, needed: 1 });
+    const stunned = reduce(charging, { type: 'block', user: 'Blocker', at: T + 1000 });
+    const next = reduce(stunned, { type: 'cheer', user: 'Bits Fighter', bits: 1000, at: T + 2000 });
+    expect(next.hp).toBe(remaining);
+    expect(next.damageByUser['Bits Fighter']).toBe(damage);
+  });
+});

@@ -232,6 +232,7 @@
 
   function showDefeated(data) {
     showView('defeated');
+    els.floaters.replaceChildren(); // Fight cues must not cover the victory summary.
     const mvps = data.mvps || [];
     els.mvpList.replaceChildren(...mvps.map(m =>
       el('li', { text: `${m.user} — ${m.amount}` })));
@@ -266,7 +267,7 @@
     }, 900);
     // The server already sends the doubled, HP-clamped amount. Keep one numeric effect (the
     // popup) and let the floater carry real attribution plus a short nonnumeric cue.
-    if (!heal) floater(crit ? 'BITS' : stunned ? 'STUN' : 'HIT', str(hit.userName), crit ? 'crit' : stunned ? 'stun' : '');
+    if (!heal && !els.fight.hidden) floater(crit ? 'BITS' : stunned ? 'STUN' : 'HIT', str(hit.userName), crit ? 'crit' : stunned ? 'stun' : '');
     if (crit) { shake(); tone(180, 260, 'sawtooth', 0.08); } else tone(heal ? 660 : 320, 90);
     const combo = num(hit.combo);
     if (combo !== null && combo >= 2) {

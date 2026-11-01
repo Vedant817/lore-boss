@@ -237,3 +237,168 @@ it.each(['generation', 'session'] as const)('discards stale transport failures a
     expect(request).toHaveBeenCalledTimes(2);
   } finally { store.close(); }
 });
+// ITERATION-09: a 429 may carry a bounded numeric Retry-After. Only that value creates a
+// per-instance absolute cooldown; malformed headers must stay a single safe failure.
+// docs: https://console.groq.com/docs/rate-limits ("Retry-After" is seconds on 429).
+const rateLimited = (retryAfter?: string) => new Response('{"error":{"message":"provider rate detail"}}', { status: 429, headers: retryAfter === undefined ? {} : { 'Retry-After': retryAfter } });
+const successBody = () => new Response(JSON.stringify({ choices: [{ message: { content: '{"ok":true}' } }] }));
+const START = '2026-11-02T12:00:00.000Z';
+const at = (offsetMs: number) => new Date(Date.parse(START) + offsetMs);
+it('LLM client honors a numeric Retry-After cooldown and suppresses requests before its deadline', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(new Date(START));
+  const secret = 'sk-cooldown-must-not-leak';
+  const prompt = 'sensitive cooldown prompt';
+  const request = vi.fn<typeof fetch>().mockResolvedValue(rateLimited(' 30 '));
+  const client = new LlmClient('https://api.groq.com/openai/v1', 'test-model', secret, request);
+  const first = await client.json(prompt, { chat: 'private viewer text' }).catch((error: unknown) => error);
+  expect(first).toBeInstanceOf(Error);
+  expect((first as Error).message).toMatch(/HTTP 429/);
+  expect((first as Error).message).toContain('2026-11-02T12:00:30.000Z');
+  expect(request).toHaveBeenCalledTimes(1);
+
+  vi.setSystemTime(at(29_999));
+  const suppressed = await client.json(prompt, { chat: 'private viewer text' }).catch((error: unknown) => error);
+  expect(suppressed).toBeInstanceOf(Error);
+  expect((suppressed as Error).message).toMatch(/HTTP 429/);
+  expect((suppressed as Error).message).toContain('2026-11-02T12:00:30.000Z');
+  expect(request).toHaveBeenCalledTimes(1);
+  const error = suppressed as Error;
+  const surface = [error.message, error.stack ?? '', String(error), JSON.stringify(error), String((error as { cause?: unknown }).cause)].join('\n');
+  for (const raw of [' 30 ', 'provider rate detail', 'private viewer text', prompt, secret, 'api.groq.com']) expect(surface, raw).not.toContain(raw);
+  expect((error as { cause?: unknown }).cause).toBeUndefined();
+});
+it('LLM client sends one fresh request exactly at the deadline and a new 429 restarts the cooldown', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(new Date(START));
+  const request = vi.fn<typeof fetch>()
+    .mockResolvedValueOnce(rateLimited('10'))
+    .mockResolvedValueOnce(rateLimited('5'))
+    .mockResolvedValueOnce(successBody());
+  const client = new LlmClient('https://api.groq.com/openai/v1', 'test-model', 'secret', request);
+  await expect(client.json('JSON', {})).rejects.toThrow('2026-11-02T12:00:10.000Z');
+  vi.setSystemTime(at(10_000));
+  await expect(client.json('JSON', {})).rejects.toThrow('2026-11-02T12:00:15.000Z');
+  expect(request).toHaveBeenCalledTimes(2);
+  vi.setSystemTime(at(14_999));
+  await expect(client.json('JSON', {})).rejects.toThrow('2026-11-02T12:00:15.000Z');
+  expect(request).toHaveBeenCalledTimes(2);
+  vi.setSystemTime(at(15_000));
+  await expect(client.json('JSON', {})).resolves.toEqual({ ok: true });
+  expect(request).toHaveBeenCalledTimes(3);
+});
+it.each<[string, string | undefined]>([
+  ['absent', undefined],
+  ['empty', ''],
+  ['nonnumeric', 'soon'],
+  ['negative', '-5'],
+  ['zero', '0'],
+  ['over 24 hours', '86401'],
+  ['huge', '999999999999999999999999'],
+  ['exponent', '1e3'],
+  ['HTTP-date', 'Wed, 21 Oct 2015 07:28:00 GMT'],
+  ['fraction over 24 hours', '86400.001'],
+  ['plus sign', '+30'],
+  ['comma fraction', '1,5'],
+])('LLM client keeps one-attempt safe failure and no cooldown for a %s Retry-After', async (_label, header) => {
+  const request = vi.fn<typeof fetch>().mockResolvedValue(rateLimited(header));
+  const client = new LlmClient('https://api.groq.com/openai/v1', 'test-model', 'secret', request);
+  const first = (await client.json('JSON', {}).catch((error: unknown) => error)) as Error;
+  expect(first.message).toMatch(/HTTP 429/);
+  expect(first.message).toMatch(/manual/i);
+  if (header) expect(first.message).not.toContain(header);
+  // No cooldown was captured: an immediate second invocation attempts one new request.
+  await expect(client.json('JSON', {})).rejects.toThrow(/HTTP 429/);
+  expect(request).toHaveBeenCalledTimes(2);
+});
+it.each<[string, string, number]>([
+  ['fractional seconds', '2.5', 2_500],
+  ['24 hour maximum', '86400', 86_400_000],
+  ['small positive', '0.001', 1],
+])('LLM client accepts %s Retry-After as a bounded cooldown', async (_label, header, delayMs) => {
+  vi.useFakeTimers(); vi.setSystemTime(new Date(START));
+  const request = vi.fn<typeof fetch>().mockResolvedValue(rateLimited(header));
+  const client = new LlmClient('https://api.groq.com/openai/v1', 'test-model', 'secret', request);
+  await expect(client.json('JSON', {})).rejects.toThrow(/HTTP 429/);
+  vi.setSystemTime(at(delayMs - 1));
+  await expect(client.json('JSON', {})).rejects.toThrow(/HTTP 429/);
+  expect(request).toHaveBeenCalledTimes(1);
+  vi.setSystemTime(at(delayMs));
+  await expect(client.json('JSON', {})).rejects.toThrow(/HTTP 429/);
+  expect(request).toHaveBeenCalledTimes(2);
+});
+it.each([400, 401, 500])('LLM client ignores Retry-After on HTTP %i and preserves its failure class', async status => {
+  const request = vi.fn<typeof fetch>().mockResolvedValue(new Response('provider detail', { status, headers: { 'Retry-After': '60' } }));
+  const client = new LlmClient('https://api.groq.com/openai/v1', 'test-model', 'secret', request);
+  await expect(client.json('JSON', {})).rejects.toThrow(`HTTP ${status}`);
+  await expect(client.json('JSON', {})).rejects.toThrow(`HTTP ${status}`);
+  expect(request).toHaveBeenCalledTimes(2);
+});
+it('LLM client never reads a 429 provider body', async () => {
+  const body = vi.fn(async () => '{"error":{"message":"provider rate detail"}}');
+  const response = rateLimited('12'); response.text = body;
+  const request = vi.fn<typeof fetch>().mockResolvedValue(response);
+  const client = new LlmClient('https://api.groq.com/openai/v1', 'test-model', 'secret', request);
+  await expect(client.json('JSON', {})).rejects.toThrow(/HTTP 429/);
+  expect(body).not.toHaveBeenCalled();
+  expect(request).toHaveBeenCalledTimes(1);
+});
+it('LLM client cooldown is per configured instance and never substitutes provider or model', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(new Date(START));
+  const limited = vi.fn<typeof fetch>().mockResolvedValue(rateLimited('60'));
+  const first = new LlmClient('https://api.groq.com/openai/v1', 'model-a', 'secret', limited);
+  await expect(first.json('JSON', {})).rejects.toThrow(/HTTP 429/);
+  await expect(first.json('JSON', {})).rejects.toThrow(/HTTP 429/);
+  expect(limited).toHaveBeenCalledTimes(1);
+  const fresh = vi.fn<typeof fetch>().mockResolvedValue(successBody());
+  const second = new LlmClient('https://api.groq.com/openai/v1', 'model-b', 'secret', fresh);
+  await expect(second.json('JSON', {})).resolves.toEqual({ ok: true });
+  expect(fresh).toHaveBeenCalledTimes(1);
+  await expect(first.json('JSON', {})).rejects.toThrow(/HTTP 429/);
+  expect(limited).toHaveBeenCalledTimes(1);
+});
+it('LLM client keeps the later concurrent cooldown instead of shortening it', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(new Date(START));
+  const releases: Array<(response: Response) => void> = [];
+  const request = vi.fn<typeof fetch>().mockImplementation(() => new Promise<Response>(resolve => { releases.push(resolve); }));
+  const client = new LlmClient('https://api.groq.com/openai/v1', 'test-model', 'secret', request);
+  const first = client.json('JSON', {});
+  const second = client.json('JSON', {});
+  expect(request).toHaveBeenCalledTimes(2);
+  releases[1]!(rateLimited('60'));
+  await expect(second).rejects.toThrow('2026-11-02T12:01:00.000Z');
+  releases[0]!(rateLimited('5'));
+  await expect(first).rejects.toThrow('2026-11-02T12:01:00.000Z');
+  vi.setSystemTime(at(30_000));
+  await expect(client.json('JSON', {})).rejects.toThrow('2026-11-02T12:01:00.000Z');
+  expect(request).toHaveBeenCalledTimes(2);
+});
+it('LLM client keeps a known cooldown when an earlier in-flight request later succeeds', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(new Date(START));
+  let release!: (response: Response) => void;
+  const request = vi.fn<typeof fetch>()
+    .mockImplementationOnce(() => new Promise<Response>(resolve => { release = resolve; }))
+    .mockResolvedValueOnce(rateLimited('60'));
+  const client = new LlmClient('https://api.groq.com/openai/v1', 'test-model', 'secret', request);
+  const slow = client.json('JSON', {});
+  await expect(client.json('JSON', {})).rejects.toThrow('2026-11-02T12:01:00.000Z');
+  release(successBody());
+  await expect(slow).resolves.toEqual({ ok: true });
+  await expect(client.json('JSON', {})).rejects.toThrow('2026-11-02T12:01:00.000Z');
+  expect(request).toHaveBeenCalledTimes(2);
+});
+it('LLM client still rejects unconfigured settings before any request or cooldown check', async () => {
+  const request = vi.fn<typeof fetch>().mockResolvedValue(successBody());
+  const client = new LlmClient('https://api.groq.com/openai/v1', '', '', request);
+  await expect(client.json('JSON', {})).rejects.toThrow(/Configure a LLM base URL and exact model first/);
+  expect(request).not.toHaveBeenCalled();
+});
+
+it('distinguishes a received rate limit from a locally suppressed invocation', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(new Date(START));
+  const request = vi.fn<typeof fetch>().mockResolvedValue(rateLimited('60'));
+  const client = new LlmClient('https://api.groq.com/openai/v1', 'test-model', 'secret', request);
+  const first = await client.json('JSON', {}).catch((error: Error) => error);
+  const suppressed = await client.json('JSON', {}).catch((error: Error) => error);
+  expect((first as Error).message).not.toContain('no request sent');
+  expect((suppressed as Error).message).toContain('no request sent');
+  expect(request).toHaveBeenCalledTimes(1);
+});

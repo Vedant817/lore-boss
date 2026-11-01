@@ -132,17 +132,31 @@ test('bounded finishing damage and a Bits crit each show one honest number', asy
   await request.post('/api/boss/spawn', { headers, data: { maxHp: 5 } });
   await page.goto('/overlay-view');
   await expect(page.locator('#ov-hp-caption')).toHaveText('5 / 5 HP');
-  await request.post('/api/test-command', { headers, data: { user: 'Finisher', command: '!attack' } });
-  await expect(page.locator('#ov-defeated')).toBeVisible();
-  await expect(page.locator('#ov-hitpop')).toHaveText('−5'); // the real remaining-HP delta, not base 10
-  const finisher = page.locator('#ov-floaters .ov-float').filter({ hasText: 'Finisher' });
-  await expect(finisher).toHaveCount(1);
-  await expect(finisher).not.toContainText(/\d/);
-  // Overlay protocol shape for a reducer-clamped Bits crit: the amount is the actual HP delta.
+  // Renderer protocol check only; this injected notification does not claim real Bits damage.
   await request.post('/api/test-overlay', { headers, data: { v: 1, type: 'boss.hit', amount: 5, crit: true, cause: 'cheer', userName: 'Bit Boss', combo: 0, stunned: false } });
   await expect(page.locator('#ov-hitpop')).toHaveText('CRIT! −5 (bits)');
   const bits = page.locator('#ov-floaters .ov-float.crit').filter({ hasText: 'Bit Boss' });
   await expect(bits).toHaveCount(1);
   await expect(bits).toContainText('BITS');
   await expect(bits).not.toContainText(/\d/);
+  await request.post('/api/test-command', { headers, data: { user: 'Finisher', command: '!attack' } });
+  await expect(page.locator('#ov-defeated')).toBeVisible();
+  await expect(page.locator('#ov-hitpop')).toHaveText('−5'); // the real remaining-HP delta, not base 10
+  const finisher = page.locator('#ov-floaters .ov-float').filter({ hasText: 'Finisher' });
+  await expect(finisher).toHaveCount(0);
+  expect(await page.locator('#ov-floaters .ov-float').count()).toBe(0);
+});
+
+test('fight floaters clear at defeat while the actual final hit remains visible', async ({ page, request }) => {
+  await page.goto('/overlay-view');
+  await request.post('/api/test-command', { headers, data: { user: 'First Fighter', command: '!attack' } });
+  await expect(page.locator('#ov-floaters .ov-float')).toHaveCount(1);
+  await request.post('/api/test-command', { headers, data: { user: 'Second Fighter', command: '!attack' } });
+  await request.post('/api/test-command', { headers, data: { user: 'Final Fighter', command: '!attack' } });
+  await expect(page.locator('#ov-defeated')).toBeVisible();
+  await expect(page.locator('#ov-finisher')).toContainText('Final Fighter');
+  // Inspect the transition itself; waiting for the ordinary 1.5s expiry would pass old code.
+  expect(await page.locator('#ov-floaters .ov-float').count()).toBe(0);
+  await expect(page.locator('#ov-hitpop')).toHaveText('−8');
+  await expect(page.locator('#ov-hitpop')).toBeVisible();
 });

@@ -90,6 +90,34 @@ test('combat rankings render once and defeated summary survives reload', async (
   await expect(overlay.locator('#ov-defeated-name')).toHaveText(summary!);
   await expect(overlay.locator('#ov-mvp-list li')).toHaveText(['Fixture Ally — 10', 'Fixture Fighter — 10']);
 });
+
+test('mobile Hall exposes horizontal statistics scrolling with keyboard access', async ({ page, request }) => {
+  const headers = { authorization: `Bearer ${token}` };
+  const status = await (await request.get('/api/status', { headers })).json();
+  await request.post(`/api/lore/${status.lore[0].id}/review`, { headers, data: { status: 'approved' } });
+  await request.post('/api/boss/spawn', { headers, data: { maxHp: 20 } });
+  for (const user of ['Mobile Fighter', 'Mobile Finisher']) await request.post('/api/test-command', { headers, data: { user, command: '!attack' } });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/hall');
+  await page.getByLabel('Mod token', { exact: true }).fill(token);
+  await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  const table = page.locator('#hall-fighters');
+  const hint = page.locator('#hall-scroll-hint');
+  await expect(hint).toBeVisible();
+  await expect(table).toHaveAttribute('tabindex', '0');
+  await expect(table).toHaveAttribute('aria-describedby', 'hall-scroll-hint');
+  await table.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect.poll(() => table.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
+  await table.evaluate(node => { node.scrollLeft = node.scrollWidth; });
+  const regionBox = await table.boundingBox();
+  const lastHeader = await page.getByRole('columnheader', { name: 'Final blows', exact: true }).boundingBox();
+  expect(lastHeader!.x + lastHeader!.width).toBeLessThanOrEqual(regionBox!.x + regionBox!.width + 1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(hint).toBeHidden();
+  await expect(table).not.toHaveAttribute('tabindex');
+});
 test('overlay restores state after recap, renders heals, and formats duration', async ({ page, request }) => {
   await page.goto('/overlay-view'); await expect(page.locator('#ov-conn')).toHaveText('connected');
   const send = (message: Record<string, unknown>) => request.post('/api/test-overlay', { headers: { authorization: `Bearer ${token}` }, data: { v: 1, ...message } });

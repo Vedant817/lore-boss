@@ -395,9 +395,11 @@
       if (!result || !Array.isArray(result.items)) throw new Error('Extraction returned an invalid response; refresh and try again.');
       // A valid empty proposal is a real no-results outcome; do not invent a queue update.
       const found = result.items.length;
-      note(found > 0 ? 'Extraction finished — queue updated.' : 'Extraction finished — no supported lore this time. Queue unchanged.', found > 0 ? 'success' : 'info');
-      await loadStatus();
+      const statusLoaded = await loadStatus();
+      const healthLoaded = await loadHealth();
+      if (statusLoaded && healthLoaded) note(found > 0 ? 'Extraction finished — queue updated.' : 'Extraction finished — no supported lore this time. Queue unchanged.', found > 0 ? 'success' : 'info');
     } catch (err) {
+      await loadHealth();
       if (err.status === 409 && err.message === 'Lore extraction already running') {
         note('Lore extraction is already in progress. Check the queue shortly.', 'info');
       } else {
@@ -784,6 +786,7 @@
       el('tbody', {}, ...fighters.map((x, i) => el('tr', {},
         el('td', { text: String(i + 1) }), el('td', { text: String(x.userName || '') }), el('td', { text: String(x.damage) }),
         el('td', { text: String(x.bossesBeaten) }), el('td', { text: String(x.blocks) }), el('td', { text: String(x.finalBlows) }))))));
+    syncHallScrollHint();
     const b = $('hall-bosses'); clear(b);
     if (!bosses.length) b.append(el('p', { class: 'caption', text: 'No bosses yet.' }));
     else b.append(el('ol', { class: 'hall-list' }, ...bosses.map(x => {
@@ -795,6 +798,20 @@
     const l = $('hall-lore'); clear(l);
     if (!lore.length) l.append(el('p', { class: 'caption', text: 'Approved lore will collect here.' }));
     else l.append(el('ul', { class: 'hall-list' }, ...lore.map(x => el('li', {}, el('span', { class: `chip chip-${String(x.kind) === 'quote' ? 'danger' : 'gold'}`, text: String(x.kind) }), ' ', String(x.text)))));
+  }
+  function syncHallScrollHint() {
+    const region = $('hall-fighters');
+    const hint = $('hall-scroll-hint');
+    if (!region || !hint) return;
+    const overflowing = Boolean(region.querySelector('table')) && region.scrollWidth > region.clientWidth;
+    hint.hidden = !overflowing;
+    if (overflowing) {
+      region.setAttribute('tabindex', '0');
+      region.setAttribute('aria-describedby', 'hall-scroll-hint');
+    } else {
+      region.removeAttribute('tabindex');
+      region.removeAttribute('aria-describedby');
+    }
   }
   async function loadHall() {
     if (currentView() !== '/hall') return true;
@@ -862,6 +879,7 @@
       }
     });
     window.addEventListener('pagehide', stopTicking);
+    window.addEventListener('resize', syncHallScrollHint);
     window.addEventListener('beforeunload', stopTicking);
     renderPurge();
     renderBoss();

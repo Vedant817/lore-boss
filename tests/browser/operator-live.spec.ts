@@ -296,3 +296,43 @@ test('malformed extraction results cannot masquerade as valid no-results', async
   await expect(page.locator('#banner')).not.toContainText('no supported lore');
   await expect(page.getByRole('button', { name: 'Extract lore now', exact: true })).toBeEnabled();
 });
+
+test('empty extraction refreshes the old health error before reporting completion', async ({ page, request }) => {
+  await page.clock.install();
+  const health = await (await request.get('/health')).json();
+  health.error = 'LLM lore proposal rejected: a quote was not verbatim from its evidence; no lore was created.';
+  await page.route('**/health', route => route.fulfill({ json: health }));
+  await page.route('**/api/extract', route => { health.error = null; return route.fulfill({ json: { items: [] } }); });
+  await unlock(page);
+  await expect(page.locator('#health-rows')).toContainText('rejected');
+  await page.getByRole('button', { name: 'Extract lore now', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Extract lore now', exact: true })).toBeEnabled();
+  await expect(page.locator('#banner')).toContainText('no supported lore');
+  await expect(page.locator('#health-rows')).not.toContainText('rejected');
+});
+
+test('extraction rejection refreshes health and keeps the specific failure message', async ({ page, request }) => {
+  await page.clock.install();
+  const health = await (await request.get('/health')).json();
+  health.error = null;
+  const rejection = 'LLM lore proposal rejected: evidence messages were missing or insufficient; no lore was created.';
+  await page.route('**/health', route => route.fulfill({ json: health }));
+  await page.route('**/api/extract', route => { health.error = rejection; return route.fulfill({ status: 409, json: { error: rejection } }); });
+  await unlock(page);
+  await page.getByRole('button', { name: 'Extract lore now', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Extract lore now', exact: true })).toBeEnabled();
+  await expect(page.locator('#banner')).toHaveText(`Extraction failed: ${rejection}`);
+  await expect(page.locator('#health-rows')).toContainText(rejection);
+});
+
+test('failed health refresh after extraction cannot fake completed status', async ({ page }) => {
+  await page.clock.install();
+  await unlock(page);
+  await page.route('**/api/extract', route => route.fulfill({ json: { items: [] } }));
+  await page.route('**/health', route => route.fulfill({ status: 503, json: { error: 'Synthetic health unavailable' } }));
+  await page.getByRole('button', { name: 'Extract lore now', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Extract lore now', exact: true })).toBeEnabled();
+  await expect(page.locator('#banner')).toHaveClass('banner banner-danger');
+  await expect(page.locator('#banner')).toContainText('Health check failed');
+  await expect(page.locator('#banner')).not.toContainText('Extraction finished');
+});
