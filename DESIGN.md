@@ -1,50 +1,23 @@
-# DESIGN — Lore Boss
-## Where the designs live
-- **Framer (canonical, built):** https://framer.com/projects/kmiVOyZm6Awpz0t8rBya — project "Lore Boss — Designs", page "Home", Desktop breakpoint `WQLkyLRf1` holds all screens stacked vertically.
-- **Figma (empty):** https://www.figma.com/design/n2sSRenpqx4313wGkHUnjs — file "Lore Boss — Designs" was created, but the Figma MCP Starter-plan tool-call limit was hit before any frames were drawn. Either upgrade, or rebuild from this doc/Framer.
-- Screenshots: `designs/screenshots/{boss-fight,raid-recap,mod-queue,design-system}.jpg`.
+# Design reference
 
-## Frames (Framer node IDs)
-| Frame | Node ID | Size |
-|---|---|---|
-| 00 Design System | `bUZ7wLdOG` | 1920×900 |
-| 01 Overlay — Boss Fight | `bDXj91UTp` | 1920×1080 |
-| 02 Overlay — Previously On… (raid recap) | `y6PPN7gU9` | 1920×1080 |
-| 03 Overlay — Lore Ticker | `Ksb3qVdHE` | 1920×80 |
-| 04 Overlay — Boss Defeated | `CRUubY7Xx` | 1920×1080 |
-| 05 Web — Mod Approval Queue | `VBsu6Z56A` | 1440×900 |
-| 06 Web — Streamer Setup & Settings | `WdD73qX4n` | 1440×900 |
-Key children: HP bar `msLrrQqD8` (fill `RkW50icOF`), MVP list `jZsfzTMjd`, quote bubble `BtVVpI0Ot`, portrait slot `INupX2YGB` (deferred — see deviations).
+The implemented design tokens are in `src/overlay/tokens.css`, shared by the operator and overlay. The original visual references remain in `designs/screenshots/` for contributor comparison.
 
-All copy in frames is `{placeholder}` — real values come from state. **Never ship placeholder or sample names in the product.** In the real overlay the 1920×1080 background is transparent (the frames use dark fill only for preview).
+## Tokens and surfaces
 
-## Tokens (also Framer color styles `LoreBoss/*`)
-| Token | Hex | Use |
-|---|---|---|
-| bg | #0E0B16 | page bg |
-| surface | #18122B | panels |
-| surface2 | #241A3D | cards, HP track |
-| primary | #9146FF | brand, portrait border |
-| primaryHi | #B57BFF | accents, chips |
-| text | #EFEFF1 | body |
-| muted | #ADADB8 | secondary |
-| danger | #FF4F6D | HP fill, reject, quote-attack chip, REPLAY badge |
-| success | #2EE6A6 | approve, defeated |
-| gold | #FFC83D | crits, MVP, LV chip |
-Type: Inter — Display 72/800, H1 40/700, H2 28/600, Body 18/400, Caption 13/500. Spacing 4/8/12/16/24/32/48. Radius 8 / cards 16 / pills 999. Overlay safe area 64px. Motion: HP drain 300ms ease-out; crit pop scale 1→1.2→1 over 250ms; recap card stagger 150ms. Respect OBS 30/60fps — CSS transforms only.
+Use the existing `--lb-*` variables for colors, typography, spacing, radius and motion instead of adding near-duplicates. The palette includes purple primary, dark surfaces, mint success, pink danger and gold highlights. Font sizes and overlay typography already include responsive limits.
 
-## How Codex/agents read designs
-- **Framer:** Framer's MCP (`open_project` → `exec` with `api.tree.serialize(nodeId,{depth:3})` and `api.tree.screenshot(nodeId)`) returns structure + images. Add the Framer MCP to Codex (`codex mcp add …` per Framer's docs) or read the screenshots in `designs/screenshots/`.
-- **Figma (if you populate the file):** Figma MCP tools `get_metadata` (frame list) and `get_design_context` / `get_screenshot` on a node ID. Add to Codex with its MCP config (`~/.codex/config.toml` `[mcp_servers.figma]`). Verify tool names in Figma's current MCP docs before relying on them.
-- Agents implement **from tokens + structure**, not pixel-copying; keep tokens in `src/overlay/tokens.css`.
+The overlay targets a transparent1920×1080 OBS browser source; `?preview` supplies a dark viewing backdrop. The operator interface provides Setup, Lore Queue and Hall of Fame. Keep fixture/replay labeling visible and private operator actions separate from public overlay output.
 
-## Deliberate implementation deviations (recorded)
-- **Combat notification row (ITERATION-07):** the large centered transient splash covered approved lore. Notifications now occupy a reserved48px row below the HP panel, use the existing28px heading token and surface/radius tokens, and fade without scaling into adjacent content. Healing retains one numeric popup instead of duplicating it in a floating number. The palette and approved text are unchanged; browser geometry regression checks notice/quote separation through charge and block states.
-- **Danger-surface foreground (accessibility correction, ITERATION-04):** `.chip-danger`, `.btn-danger`, `.banner-danger` and `.badge-replay` render `--lb-bg` (#0E0B16) text on the unchanged `--lb-danger` (#FF4F6D) background — computed contrast ≈6.1:1 (WCAG AA for normal text) instead of the frames' light-on-danger ≈2.8:1. This is a foreground-only deviation from the frames: every palette hex, size, frame and motion value is unchanged. The user's explicit design-fix authorization covers this token-internal correction; it is asserted by computed-style tests in `tests/browser/presentation.spec.ts`.
-- **Portrait slot (frame 01 child `INupX2YGB`) is deferred, not implemented:** no art source exists, so the dead `.ov-portrait` CSS was removed and no placeholder art or image URL ships. Revisit post-hackathon with a real operator-supplied asset.
+## Interaction requirements
 
-- **Damage feedback clarity (ITERATION-08):** the server sends actual doubled/clamped HP loss. The main popup is the only numeric hit effect. Secondary floaters retain the real attacker and a nonnumeric HIT/STUN/BITS cue; no extra multiplier is attached to an already-doubled number. The stun badge still explains double damage. Existing tokens, animation and gameplay arithmetic remain unchanged.
+- Keep health, quote attacks, strike/block state, damage and final contributor credit readable without collisions.
+- Show one numeric combat effect per hit and preserve real attribution; do not repeat an already multiplied amount.
+- Treat extraction errors and valid empty results differently. Failed/stale loads must not claim fresh success.
+- Background refresh must preserve drafts and expanded evidence, stop for hidden/locked views and avoid stale-response overwrites.
+- Provide visible labels, focus indicators, accessible status feedback and keyboard access. Overflowing Hall statistics need a visible horizontal-scroll affordance.
+- Enabled danger buttons, badges and banners use the dark foreground on the danger background; keep contrast coverage passing.
+- Respect reduced motion. Optional synthesized sounds are opt-in; ordinary overlay mode is silent.
 
-- **Operator/defeat clarity (ITERATION-09):** manual extraction refreshes health before reporting completion and after rejection, preserving failure banners. Fight-only nonnumeric floaters are cleared at defeat; the actual final-hit number and final-blow/MVP values remain. Overflowing fighter statistics get a descriptive horizontal-scroll hint and keyboard-focusable region, removed when the table fits. Existing tokens/focus ring are reused; game arithmetic and history remain unchanged.
+Portrait art and generated lore prose are deferred. Do not add placeholders or fake community data to product paths. Add synthetic inputs only to clearly labeled tests/fixtures.
 
-- **Reserved attribution cue (ITERATION-10):** random floating HIT/STUN/BITS labels could obscure approved lore and damage rankings. One latest real-attacker cue now occupies a dedicated48px flow lane below notifications,using existing heading/caption tokens and opacity-only animation. Defeat still clears it; primary numeric hit/heal/final-hit feedback and score arithmetic are unchanged. The Hall pins the Viewer column (rather than rank alone) with the existing surface token while narrow statistics scroll,so identity and final statistics remain visible together.
+Current rendered regression coverage lives in `tests/browser/`: presentation, operator freshness, moderation/auth and the real fixture-driven combat loop. Review visual changes against both the original references and current behavior.

@@ -1,100 +1,81 @@
 # Lore Boss
 
-Current local submission handoff: [submission/START-HERE.md](submission/START-HERE.md). The retained video is submission/demo.mp4. External video packages are superseded; cleanup instructions are in the handoff. Historical references below are not the canonical submission location.
+**Turn your Twitch chat's inside jokes into a boss battle.**
 
+[![CI](https://github.com/Vedant817/lore-boss/actions/workflows/ci.yml/badge.svg)](https://github.com/Vedant817/lore-boss/actions/workflows/ci.yml)
 
-**Your chat's inside jokes become a boss your whole community fights.**
+Lore Boss is a local Twitch companion: an LLM proposes community lore with supporting chat messages, a moderator reviews it, and approved lore becomes a boss on stream. Viewers attack, heal and block through chat.
 
-### Community fight mechanics
+![Lore Boss fight beside Twitch chat](submission/screenshots/03-block-stun.png)
 
-- `!attack` deals base damage; distinct viewers attacking within five seconds build a combo (up to +10 bonus damage).
-- A lore strike starts charging 15 seconds after spawn. Chat has eight seconds to `!block`; the required number of distinct blockers scales with active chatters. Blocking stuns the boss for five seconds and doubles incoming damage. An unblocked strike restores some boss HP.
-- The boss enrages at 50% and 25% HP, with faster strikes. Heals restore five HP, capped at max HP. Base Bits damage is capped at 100 before the stun multiplier and remaining-HP clamp.
-- `/hall` shows persistent fighter totals, boss history and approved lore, separated between live and replay. The defeat overlay shows earned titles and the final blow. `!stats` replies with the viewer's recorded history. Display names and combat history remain until the operator purges the database.
-- Optional Channel Points Predictions ask whether chat can win within three minutes. They require an eligible Affiliate/Partner channel plus `channel:manage:predictions`; existing authorizations without that scope still support ordinary fights. Reconnect Twitch to grant it if wanted. Predictions report a result only after Twitch accepts settlement; failures direct the operator to Twitch's Predictions dashboard. Real account Predictions have not been acceptance-tested. [Twitch API](https://dev.twitch.tv/docs/api/reference/#create-prediction).
-- Optional synthesized overlay sounds use `/overlay-view?sound`; ordinary OBS mode stays silent. Your browser/OBS audio policy still applies.
+[Watch the recorded demo](submission/demo.mp4) · [Architecture](ARCHITECTURE.md) · [Design](DESIGN.md) · [Build provenance](CODEX_LOG.md)
 
-Cooperative strike/block/stun, failure healing, defeat, Hall of Fame and reload have isolated labeled replay coverage. November 1 owner-channel recordings also exercise live block/stun/attack/heal and saved results. Current repair-round media is identified in [DEMO_SCRIPT.md](DEMO_SCRIPT.md); older videos are historical. This proves exercised operation, not participant enjoyment or eligible-channel Predictions settlement.
+## What it does
 
-Lore Boss listens to Twitch chat (EventSub), uses an LLM to propose recurring community lore (catchphrases, rivalries, legendary moments, quotes), and shows each proposal to a moderator *with the exact chat messages that support it*. Approved lore becomes a raid boss in a transparent OBS browser-source overlay. Viewers fight it with `!attack` and `!heal`, Bits land capped critical hits, the defeat screen crowns MVPs, and an incoming raid gets a "previously on…" recap built from approved lore.
+- **Evidence before approval:** inspect the stored messages behind a proposal; approve, edit or reject it. Only approved lore becomes public.
+- **Chat-driven fights:** `!attack`, `!heal` and `!block`; coordinated attacks earn combo bonuses and successful blocks stun the boss.
+- **OBS overlay:** transparent browser source, quote attribution, health, defeat and contributor rankings.
+- **Community history:** Hall of Fame, Lore Book, `!stats` and `!lore` replies.
+- **Raid recap:** a labeled template assembled from approved lore. Optional Channel Points Predictions require an eligible Twitch channel.
 
-- Built for: Twitch streamers and their communities (chat + EventSub + Helix chat + OBS overlay).
-- Built with: OpenAI Codex. Main Codex session ID: `01a17213-bdd6-76b0-ad36-6c8f9841a293`.
-- Stack: TypeScript (strict), Node 22+, Fastify, ws, SQLite (better-sqlite3), zod, plain browser UI.
+## Requirements
 
-These stills come from the current media with continuously labeled source62fed7d and corrected mobile98226c5 (packaged Nov 2 IST, 2026). Actual twitch.tv chat is on the right. This is one broadcaster's rehearsal:
+Node.js **22 or 24**, npm and a modern browser. SQLite uses `better-sqlite3`; a platform without a compatible prebuilt binary needs its native build prerequisites. OBS and Twitch/LLM credentials are needed for live use, not the local playground or tests.
 
-| Evidence-backed moderation | The boss fight in the OBS overlay | Defeat, MVPs and native Twitch chat |
-|---|---|---|
-| ![Moderation queue with chat evidence](docs/screenshots/judge05-evidence.png) | ![Overlay boss fight next to Twitch chat](docs/screenshots/judge05-block-stun.png) | ![Defeat screen beside actual Twitch commands](docs/screenshots/judge05-defeat-chat.png) |
+## Try it without accounts
 
-## For judges: try it in 2 minutes, no Twitch or LLM keys needed
-
-This starts an isolated, clearly labeled **synthetic REPLAY fixture**: in-memory data with three seeded pending lore items. It never connects to Twitch or an LLM, so you see the real moderation UI, real combat reducer and real overlay without registering anything.
-
-```powershell
+```sh
+git clone https://github.com/Vedant817/lore-boss.git
+cd lore-boss
 npm ci
-npm run fixture        # http://localhost:3107 (set LB_BROWSER_PORT to change)
+npm run fixture
 ```
 
-1. Open http://localhost:3107. Unlock with the public, fixture-only token `test-moderator-token-0123456789`.
-2. **Queue**: open *View evidence* to see the chat lines behind each item, then **Approve** "The banana council has spoken" (or Edit and approve it). The third item, "One more attempt", deliberately shows *missing or expired evidence*, which is what a moderator sees once chat retention has deleted the supporting lines. On **Setup**, spawn the boss with 100 HP.
-3. Open http://localhost:3107/overlay-view?preview in a second window. This is what OBS renders; `?preview` only adds a dark backdrop so it is readable in a browser tab (OBS uses `/overlay-view`, which is transparent).
-4. Make "chat" fight. Each command goes through the same reducer that live EventSub chat uses:
+1. Open **http://localhost:3107** and unlock with the public **fixture-only** token `test-moderator-token-0123456789`.
+2. Open **Queue**, inspect evidence and approve a seeded item.
+3. Return to **Setup**, choose boss HP and spawn it.
+4. Open **http://localhost:3107/overlay-view?preview** to see the overlay.
+
+This is explicitly labeled synthetic **REPLAY** mode, with an in-memory database and no Twitch or LLM calls. Its test-only command routes are absent from production. For example, from PowerShell:
 
 ```powershell
-$h = @{ Authorization = 'Bearer test-moderator-token-0123456789' }
-$api = 'http://localhost:3107/api'
-foreach ($v in 'ana','bo','cy') { Invoke-RestMethod -Method Post "$api/test-command" -Headers $h -ContentType 'application/json' -Body (@{ user = $v; command = '!attack' } | ConvertTo-Json) }
-Invoke-RestMethod -Method Post "$api/test-command" -Headers $h -ContentType 'application/json' -Body '{"user":"dee","command":"!heal"}'
-Invoke-RestMethod -Method Post "$api/test-raid" -Headers $h -ContentType 'application/json' -Body '{"raider":"FriendlyStreamer","viewers":42}'
+$headers = @{ Authorization = 'Bearer test-moderator-token-0123456789' }
+Invoke-RestMethod -Method Post 'http://localhost:3107/api/test-command' -Headers $headers -ContentType 'application/json' -Body '{"user":"contributor","command":"!attack"}'
 ```
 
-Repeat the attack line until the boss falls to see the defeat/MVP screen. Each viewer has a one-second cooldown. The fixture's test-only routes do not exist in the production server. For the real Twitch flow, follow **Run it** below.
+Use Ctrl+C to stop the fixture. Set `LB_BROWSER_PORT` if 3107 is occupied.
 
-## How Codex was used
+## Run with Twitch
 
-Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`). It planned the spec/architecture/milestones and implemented core OAuth/EventSub/Helix, the reducer, evidence-checked extraction and app wiring. Earlier DeepSeek/GLM cards had separate implementer/reviewer passes; Codex completed the cooperative-fight iteration and ITERATION-07 repairs directly. For ITERATION-08, OpenCode DeepSeek implemented the scoped rejection/damage fixes; Codex independently corrected stale failed-request status and malformed-response handling, then ran joined gates. Later judge panels are independent evaluations, not a claim every patch received prior independent review. Current ITERATION-11 acceptance passes **235 unit tests in 16 files and 47 browser tests**; historical ITERATION-10 was221/15/47. Combat claim/history writes now commit atomically before public state; no crash-recovery promise follows. OpenCode added the bounded rate-limit client; Codex corrected its initial-versus-suppressed wording and implemented coherent health feedback, defeat cleanup and accessible Hall scrolling. Dated gates and separately observed Windows/Linux × Node 22/24 CI conclusions are in [CODEX_LOG.md](CODEX_LOG.md). Tests establish exercised behavior, not community appeal. See [guardrails/](guardrails/) and [task cards](orchestration/cards/) for process artifacts. The guardrails command checks six banned string patterns only; it does not certify semantic grounding, API correctness, secrets hygiene or security. Those rely on the relevant tests and review.
-
-## Run it
-
-Requires Node 22+ and npm. Verified on Windows with Node 24.13.1. SQLite uses better-sqlite3; platforms without a prebuilt binary need its native build prerequisites.
-
-```powershell
+```sh
 npm ci
 npm run dev
 ```
 
-Default: http://localhost:3000. If that port is busy, set `PORT` in .env. The Twitch redirect follows it (`http://localhost:<PORT>/auth/callback`); set `TWITCH_REDIRECT_URI` only to override it.
+Open **http://localhost:3000** (or the `PORT` in your ignored `.env`). First boot generates a random `MOD_TOKEN` in `.env`; enter it privately on Setup. Existing local configuration can override the default port.
 
-First boot creates an ignored .env containing a random MOD_TOKEN. Open that file locally and enter the token on setup. Never paste tokens into chat. All operator APIs require the token. The server binds to IPv4 loopback and checks Host/Origin. The OBS overlay receives no credentials.
+1. Register a **confidential** app in the [Twitch developer console](https://dev.twitch.tv/console/apps). Register the exact redirect `http://localhost:<PORT>/auth/callback`.
+2. Save the Client ID and secret privately in Setup, then **Connect Twitch** as the broadcaster. Required scopes are `user:read:chat`, `user:write:chat` and `bits:read`; Predictions additionally request `channel:manage:predictions` and require channel capability.
+3. Configure your inference endpoint, exact model ID and credential. Supported configurations include local OpenAI-compatible endpoints, Groq and deployed Modal endpoints. There is no automatic provider/model fallback. Groq was exercised with base URL `https://api.groq.com/openai/v1` and model `openai/gpt-oss-20b`; verify access in your own account.
+4. Select **Check inference**. Saved settings alone do not establish model availability.
+5. Chat normally. Extraction runs every 60 seconds or via **Extract lore now**. Review actual evidence before approving; source references do not establish semantic truth.
+6. Spawn a boss and add `http://localhost:<PORT>/overlay-view` to OBS as a **1920×1080 Browser Source**. `?preview` adds a dark backdrop for ordinary browser viewing; `?sound` enables optional synthesized effects.
 
-1. Register a confidential Twitch app at https://dev.twitch.tv/console/apps with the exact redirect `http://localhost:<PORT>/auth/callback`.
-2. Unlock setup, save Client ID and Client secret, then select Connect Twitch. Authorize as the broadcaster. Scopes: user:read:chat, user:write:chat, bits:read. Identity and scopes are validated before connecting and hourly thereafter. Registration, sign-in and consent require the account owner.
-3. Configure inference. Final selected provider: **Groq**, base URL `https://api.groq.com/openai/v1`. We tested with `openai/gpt-oss-20b`, an open-weight model served by Groq. Save a Groq API key privately in setup. Confirm model access in your account. No inference key is configured by this repository. [Compatibility](https://console.groq.com/docs/openai), [models](https://console.groq.com/docs/models), [API keys](https://console.groq.com/keys).
-4. Alternatively save your deployed Modal OpenAI-compatible /v1 URL, exact served model ID, and endpoint credential. Modal provisioning/deployment is not claimed. Local compatible servers are supported too. There is no automatic provider/model fallback. [Modal documentation](https://modal.com/docs/examples/vllm_inference).
-5. On Groq with `openai/gpt-oss-20b` or `openai/gpt-oss-120b`, requests use strict Structured Outputs (constrained decoding, [docs](https://console.groq.com/docs/structured-outputs)); other endpoints use JSON object mode. Use Check inference in setup to verify an actual model response; saved configuration alone does not prove inference. Then chat normally. Every 60 seconds, up to 200 eligible messages are submitted for extraction. Extract lore now runs the same pipeline. Invalid JSON, unsupported evidence, blocked terms or unavailable inference create no lore. A valid numeric Retry-After on HTTP 429 pauses requests until the displayed deadline (maximum 24 hours); paused invocations send no request. After that time, Check inference or a later extraction can try again. There is no automatic resend or provider fallback, and the deadline does not guarantee availability.
-6. Open Queue, expand View evidence to inspect stored chat lines and any missing IDs, then approve, edit-and-approve or reject pending items. Evidence is private and scoped to the active session. Reviewed items are immutable. Only approved lore in the active session reaches public output. Enter your intended max HP and spawn the boss.
-7. Add `http://localhost:<PORT>/overlay-view` to OBS as a 1920 x 1080 Browser Source. Background is transparent. `!attack` deals 10 damage; `!heal` restores 5 boss HP, capped at max. Commands share a one-second cooldown per viewer. Bits deal twice their amount, capped at 100 base damage before the stun multiplier and remaining-HP clamp. Anonymous Bits never invent an MVP identity. MVPs use actual damage capped by remaining HP.
+For a compiled run: `npm run build`, then `npm start`. Use one live instance per port/database. Stop it with Ctrl+C.
 
-`!lore` replies with the session's approved lore, rotating and rate-limiting per viewer. Boss labels use bounded whole-word excerpts with an ellipsis when shortened; the approved attack text remains intact. Raid recaps are labeled templates, not LLM-generated prose. Citation checks validate source IDs and quote substrings; moderators still verify the semantic meaning of non-quotes and edited text.
+| Command | Effect |
+|---|---|
+| `!attack` | Base 10 damage; a bounded distinct-viewer combo bonus can apply. |
+| `!heal` | Restore 5 boss HP, capped at maximum. |
+| `!block` | Block a charging lore strike; enough distinct blockers stun the boss for five seconds and double incoming damage. |
+| `!lore` | Reply with approved lore from the active session. |
+| `!stats` | Reply with recorded viewer history. |
 
-## Recording, replay and privacy
+The first lore strike charges 15 seconds after spawn and has an eight-second block window. A missed strike heals the boss. Enrage accelerates strikes as HP falls. Bits deal twice their amount, capped at 100 **base** damage before stun and remaining-HP limits.
 
-Record your own session first; recordings are gitignored and never shipped. Obtain participant consent before recording. Close an instance before using its port/database.
+## Develop and verify
 
-```powershell
-npm run record -- fixtures/replay/real-session.jsonl
-npm run replay -- fixtures/replay/real-session.jsonl
-```
-
-Recording creates a new file exclusively. Replay validates the whole JSONL before starting, forces source=replay, and visibly displays REPLAY MODE — LABELED. Live is the default. Synthetic inputs belong in tests/fixtures and must not be presented as a real stream. Replay cannot connect to Twitch or send chat. Earlier approved lore is retained privately but does not automatically populate another session or cross from replay into live.
-
-Chat and unapproved lore from ended sessions are deleted after 24 hours, at startup and hourly. Purge session content… then Confirm purge stops ingestion, invalidates pending extraction, disconnects authorization, and deletes all database content. Saved recordings are separate operator-controlled files and must be removed separately. OAuth tokens and configuration secrets are local ignored files, not encrypted at rest. Keep this app local.
-
-## Verification
-
-```powershell
+```sh
 npm run typecheck
 npm run lint
 npm test
@@ -104,17 +85,20 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-Browser tests launch an isolated in-memory synthetic REPLAY fixture on port 3108. Set LB_BROWSER_PORT for another worker. Artifacts go to the OS temporary directory. Coverage includes approval/edit/rejection, spawning, transparent overlay/design tokens, reload, invalid credentials, mobile overflow and privacy purge. This is fixture acceptance, not live Twitch/LLM proof.
+Browser checks start their own isolated replay fixture (default port 3108); they do not use your live database or credentials. GitHub Actions checks Windows/Linux with Node 22/24. The latest local suite passed **235 unit tests and 47 browser tests**; counts are a dated verification receipt, not a permanent feature guarantee.
 
-TestSprite plans and how to run them against the fixture are in [docs/TESTSPRITE.md](docs/TESTSPRITE.md).
+The required fixtures in `tests/` and `fixtures/` are intentional test inputs. Generated recordings, build output, databases, credentials and installed dependencies are ignored.
 
-GitHub Actions verifies Node 22/24 on Windows/Linux, including browser checks. See [remaining acceptance](docs/REMAINING_ACCEPTANCE.md), [actual local OBS checks](docs/OBS_ACCEPTANCE.md), and the [labeled preview recorder](docs/PREVIEW_RECORDING.md). Hosted CI conclusions are recorded separately from local gates.
+## Privacy and boundaries
 
-## What has been verified on Twitch
+The server binds to **127.0.0.1**. Keep it local; do not expose it through a proxy. Operator APIs require a moderator token. The credential-free overlay publishes approved content and community records. Local configuration and OAuth tokens are not encrypted at rest; do not share `.env`, `data/`, tokens or recordings without consent.
 
-- **Live on Twitch, on the owner's own channel (2026-10-25, 2026-10-29 and the 2026-11-01 demo recording):** OAuth, EventSub chat subscription, real incoming chat, Groq extraction, evidence review, approval, spawning, `!attack`/`!heal`, defeat/MVP, reload survival and the outgoing `!lore` chat reply.
-- **Simulated with the official Twitch CLI (labeled as simulation):** Bits cheers and an incoming raid, sent through the production normalization path. Real paid Bits and a real incoming raid have not happened on the test channel.
-- **OBS:** rendered as a 1920×1080 browser source in OBS 32.
-- **Not yet done:** a multi-viewer public stream. See [docs/JUDGE_REHEARSAL.md](docs/JUDGE_REHEARSAL.md) and [docs/REMAINING_ACCEPTANCE.md](docs/REMAINING_ACCEPTANCE.md) for receipts.
+Ended-session chat and unapproved lore expire after 24 hours. Approved lore and community history persist until purge. Purge deletes database content; recording files are separately controlled by the operator. See [Architecture](ARCHITECTURE.md) for the local threat model.
 
-More detail: [SPEC.md](SPEC.md) (brief), [ARCHITECTURE.md](ARCHITECTURE.md), [DESIGN.md](DESIGN.md), [MILESTONES.md](MILESTONES.md), [guardrails/](guardrails/), [ORCHESTRATION.md](ORCHESTRATION.md) and [orchestration/cards/](orchestration/cards/).
+Replay is explicit and labeled. To record/replay your own consented session, use `npm run record -- fixtures/replay/real-session.jsonl` and `npm run replay -- fixtures/replay/real-session.jsonl`. Close the previous instance first. These files are ignored; real chat is not a test fixture.
+
+## Current scope
+
+The live workflow has been exercised on a broadcaster's own Twitch channel. Multi-viewer enjoyment, real paid Bits, incoming raids and eligible-channel Predictions still need live validation. Automated/simulated coverage is not live acceptance. The [demo notes](submission/README.md) state the current video's limits.
+
+Repository layout: `src/` application; `tests/` automated checks and isolated playground; `fixtures/` required captured test inputs; `scripts/` guardrail check; `guardrails/` contribution constraints; `submission/` current demo, screenshots and project description. Historical reviews and task cards remain in Git history rather than the working tree.

@@ -36,9 +36,9 @@ Codex was the main build thread (session `01a17213-bdd6-76b0-ad36-6c8f9841a293`)
 - turned the brief into a spec, architecture, milestone plan, design system (from supplied reference screenshots) and **guardrails** (no hallucinated APIs, so every external call cites its official doc URL; no fake data; replay must be a labeled flag; tests required);
 - implemented the core itself: Twitch OAuth with identity/scope validation, the EventSub WebSocket client with reconnect and durable de-duplication, the **pure deterministic boss reducer**, the evidence-checked LLM extraction pipeline (zod-validated, prompt-injection-aware) and the Fastify app wiring;
 - delegated earlier scoped UI/docs/review cards to OpenCode DeepSeek and GLM with distinct implementer/reviewer passes. Codex completed the later cooperative-fight iteration and current repairs directly; independent judge reviews followed, not every patch received a prior independent review;
-- verified changes with strict typecheck, ESLint, unit tests, isolated Playwright browser checks and guardrails. The current repair round passes **235 unit tests in 16 files and 47 browser tests**. Combat claim/history writes commit atomically before state publication; this does not promise crash recovery. Dated local totals and separately observed Windows/Linux × Node 22/24 CI conclusions are in CODEX_LOG.md. Passing gates are engineering evidence, not proof of audience enjoyment.
+- verified changes with strict typecheck, ESLint, unit tests, isolated Playwright browser checks and guardrails. The current repair round passes **235 unit tests in 16 files and 47 browser tests**. Combat claim/history writes commit atomically before state publication; this does not promise crash recovery. Dated local totals and separately observed Windows/Linux × Node 22/24 CI conclusions are in ../CODEX_LOG.md. Passing gates are engineering evidence, not proof of audience enjoyment.
 
-The full card-by-card record is in `CODEX_LOG.md`.
+The full card-by-card record is in `../CODEX_LOG.md`.
 
 Stack: TypeScript (strict), Node 22+, Fastify, ws, SQLite via better-sqlite3, zod, a plain-JS operator UI and overlay, Twitch EventSub/Helix, OBS browser source. Inference accepts explicitly configured local, Groq or Modal OpenAI-compatible endpoints, not arbitrary hosted providers. We exercised Groq (`openai/gpt-oss-20b`). There is no automatic provider/model fallback.
 
@@ -80,10 +80,6 @@ Open http://localhost:3107 and unlock with the public fixture-only token `test-m
 
 ---
 
-## Owner checklist (not part of the submission text)
+## Owner checklist
 
-1. Current local video: `submission/demo.mp4` — 71.087 seconds,1920×1080 H.264/AAC,synthetic narration and captions. SHA256 `62f5b1ce656ed4b3271b57b755ea0a39923008cdf63bc899134316d5a497bb1c`. Real solo Twitch chat,stored evidence,moderator approval,spawn and fight were captured in one OBS source; the pitch trims/reorders that source and never shifts chat independently. Superseded recordings/packages are excluded from this handoff; automated deletion was blocked and Cleanup.ps1 is supplied.
-2. Actual Codex UI/status footage is still absent after shared-session/privacy guards. Do not call the video complete against that requested element. Review/watch/listen before publication; no paid Bits,real raid,multi-viewer study or Predictions acceptance is implied.
-3. Upload the chosen video publicly to YouTube and replace the video placeholder. Owner publication/submission are not performed here.
-4. Complete personal fields:29286 submitter type;29287 country;29292 new-skills survey;29293 future-Codex-use survey;29294 age-of-majority;29295 eligible jurisdiction;29296 non-employee attestations. Verify the current form and answer personally. Project fields29288 repository,29289 session,29290 technology and29291 community use have draft material above.
-5. Use `submission/screenshots/` and follow `submission/START-HERE.md`. `submission/source-code.zip` is the actual app-source archive,not a demo-media package. Keep `.env`,data and tokens private. Check the official event's current requirements and deadline before submitting.
+Review the current demo and its limits in [README.md](README.md). Upload the chosen video publicly to YouTube,replace its URL placeholder,answer personal eligibility/team/survey fields yourself and verify the official event requirements before submitting. This repository does not claim an upload or submission. Application source is the GitHub repository,not a demo ZIP.
