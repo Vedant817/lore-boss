@@ -366,3 +366,11 @@ Root reproduced2browser failures before fixing the confirmed cue collision and m
 ## 2026-11-02 — capture caught compressed sticky identity
 
 Before accepting new media,root found the pinned Viewer column wrapping one character per line. Added a meaningful two-line readability regression(old260px,allowed<=71px),then12ch minimum width;focused PASS. Repeated joined gates after the correction:221unit/15files,47browser(27.6s),typecheck/lint/build/guardrails PASS. Rejected working121.2s cut preserved and labeled;not independently reviewed. Final media will explicitly label any earlier62fed7d footage and recapture only corrected mobile at the new commit,without extra public posts or a fabricated new provider success.
+
+## 2026-11-02 — validated fifth media freeze
+
+Valid final package C:/Users/vedan/Videos/LoreBoss-judge05-final-2026-11-02:121.2s,3030frames,1080p25H.264/AAC,MP4SHA25617cd06fed5cf86f846310e74732f2d8798aea163492f3cad7a21557213c01702.39-entryZIP SHA2564200c01edc2e3b03979b2d7ae7ca72236a83004e169222a2624ef857307084c7;CRC/embeddedMP4hash PASS.15encoded stills inspected;22text fields fit;full decode/audio-gap checks and package/source secret scans PASS. No continuous human watch/listen.
+
+Actual footage62fed7d retained with continuous source labels;mobile recaptured98226c5 after min-width correction. Original capture receipt unchanged;current gates221/47(27.6s) and per-scene heads explicit. Saved real approved lore reused during429cooldown;no new manual extraction claimed. Eight posts;45HP+5heal=50damage,oneblock,defeat/reload/stats/lore. Historical solo totals15/590 not participants. Synthetic combo/raid labeled. OriginalOct25 Codex core excerpt plus current cue regression/recorded layout repair/gates are dated user-visible exports. Failed working cut preserved and labeled,not judged.
+
+After capture local runtime stopped;root restored via npm start(session10383),verified localhost and127.0.0.1 HTTP200/auth/EventSub. Detached Start-Process was policy-blocked;no bypass attempted. New empty error is not provider recovery proof. Owner-facing obsolete unlock request clarified. No upload/submission/study or account attestations.

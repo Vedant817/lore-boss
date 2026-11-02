@@ -1,5 +1,15 @@
 # Remaining acceptance and evidence
 
+## ITERATION-10 current media —2026-11-02 IST
+
+Use `C:/Users/vedan/Videos/LoreBoss-judge05-final-2026-11-02/LoreBoss-demo-judge05.mp4` —**121.2s,3030frames,1920x1080H.264/25fps,AAC local synthetic narration**;SHA256`17cd06fed5cf86f846310e74732f2d8798aea163492f3cad7a21557213c01702`. Reviewed product98226c5. Live/operator/fixture footage source62fed7d is continuously labeled;corrected mobile source98226c5 is separately labeled. The original recording receipt remains at its actual earlier source;current gates and per-scene provenance are explicit. The rejected working cut in the non-final judge05 directory is NOT for upload or review.
+
+This cut uses genuine previously approved owner-chat lore,not a new extraction success. It shows saved evidence,45HP spawn,one block,20hit,+5heal,20hit,10finish,defeat/reload,!stats/!lore replies. Eight authorized posts in the owner's channel. Hall15bosses/590damage remains historical solo data. Synthetic combo/raid is labeled;no real viewers,Bits,raid or Predictions acceptance. New cues have a reserved lane;corrected mobile identity stays readable while statistics scroll. Three shorter exported Codex cards show dated October25 original core code,actual cue regression/layout change and gate output,not original IDE/live coding.
+
+Current joined gates221unit/15files,47browser(27.6s),typecheck/lint/build/string scan PASS. Fifteen final-file stills inspected,22text fields fit,full AV decode and no>=3s gaps below-40dB PASS;no continuous human watch/listen claim. Package/source secret scans PASS;39-entry ZIP CRC/embedded MP4hash PASS. New panel05 pending,with no target or predicted score.
+
+After capture,the local server stopped and root restored it with npm start;HTTP200,Twitch/EventSub connected. Detached launch was policy-blocked;ordinary project start succeeded. Startup error=null is not a new inference proof. Real participants unavailable;studyNOT RUN. Publication/Devpost remain owner-only. All older media and reports are historical and preserved.
+
 ## ITERATION-09 current video — 2026-11-02 IST
 
 `C:/Users/vedan/Videos/LoreBoss-judge04-2026-11-02/LoreBoss-demo-judge04.mp4` — **150 seconds,1920×1080 H.264/25fps,3750frames,AAC local synthetic narration**. Product9beedce; SHA256`9edee549202f8145594061b6c34c8c3bfd73e06895b7e2edfa8a7165279f450a`. The matching38-entry ZIP passes CRC and MP4 hash verification;14final-file stills and manifest/validation/source provenance accompany it. All older packages and their dated observations below are historical.
