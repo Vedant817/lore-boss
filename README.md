@@ -1,5 +1,8 @@
 # Lore Boss
 
+Current local submission handoff: [submission/START-HERE.md](submission/START-HERE.md). The retained video is submission/demo.mp4. External video packages are superseded; cleanup instructions are in the handoff. Historical references below are not the canonical submission location.
+
+
 **Your chat's inside jokes become a boss your whole community fights.**
 
 ### Community fight mechanics

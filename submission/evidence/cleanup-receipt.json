@@ -1,0 +1,21 @@
+{
+  "automaticDeletion": "BLOCKED",
+  "reason": "blocked by policy; no further reason supplied",
+  "deletedByAgent": [],
+  "runtimeStoppedPid": 17272,
+  "obsClosed": true,
+  "obsWebsocketEnabled": false,
+  "health3137": "unreachable",
+  "portsObservedNotListening": [
+    3137,
+    3107,
+    3199,
+    4455
+  ],
+  "manualCleanup": "pwsh -File .\\submission\\Cleanup.ps1 -Apply",
+  "privateStatePreserved": [
+    ".env",
+    "data"
+  ],
+  "dependencyManifestsPreserved": true
+}

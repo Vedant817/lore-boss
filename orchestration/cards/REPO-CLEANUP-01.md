@@ -1,0 +1,7 @@
+# REPO-CLEANUP-01
+
+Owner requests contributor-ready repository cleanup, ordered commits and push. Allowed: all repository documentation, agent/orchestration artifacts, generated design/architecture exports, obsolete TestSprite/recording utilities and their exclusive fixtures, submission metadata/media, .env.example/.gitignore, Git commits/push. Preserve application source, active unit/browser suites, required fixtures, dependency manifests, private ignored state, and existing Git history.
+
+Order: preserve the currently uncommitted handoff/evidence first; remove obsolete tracked artifacts and exclusive preview tooling second; finish concise contributor documentation third. Recover deleted tracked material from Git history rather than retaining duplicate checkpoints in HEAD. Keep the requested canonical video and current screenshots in the repository. Do not silently delete required synthetic test inputs or select a license on behalf of the owner. Remove this completed task card with the obsolete orchestration directory after the preservation commit.
+
+Verify actual tests/imports and links, typecheck/lint/unit/build/guardrails/browser and final credential scan. Push normal main without force/history rewrites. Do not deploy/submit/publish a video or touch unrelated global services/tools. Recursive ignored-directory cleanup remains policy-blocked; use reversible Git removal for reviewed tracked artifacts, report any local-only leftovers accurately.

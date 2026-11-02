@@ -13,3 +13,5 @@ recordings/
 *.mkv
 *.mov
 *.webm
+!submission/demo.mp4
+submission/source-code.zip
