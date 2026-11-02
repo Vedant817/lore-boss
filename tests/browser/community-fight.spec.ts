@@ -175,7 +175,20 @@ test('bounded finishing damage and a Bits crit each show one honest number', asy
 });
 
 test('fight floaters clear at defeat while the actual final hit remains visible', async ({ page, request }) => {
+  // Exercise a slow initial transport while still forwarding the real fixture's messages.
+  // docs: https://playwright.dev/docs/api/class-websocketroute#web-socket-route-connect-to-server
+  await page.routeWebSocket('**/overlay', async socket => {
+    await new Promise<void>(resolve => setTimeout(resolve, 500));
+    socket.connectToServer();
+  });
+  // Keep the 1.5s cue alive until the defeat transition clears it, even on a slow runner.
+  // docs: https://playwright.dev/docs/api/class-clock#clock-pause-at
+  const clockStart = Date.now();
+  await page.clock.install({ time: clockStart });
+  await page.clock.pauseAt(clockStart + 60_000);
   await page.goto('/overlay-view');
+  await expect(page.locator('#ov-conn')).toHaveText('connected');
+  await expect(page.locator('#ov-hp-caption')).toHaveText('30 / 30 HP');
   await request.post('/api/test-command', { headers, data: { user: 'First Fighter', command: '!attack' } });
   await expect(page.locator('#ov-floaters .ov-float')).toHaveCount(1);
   await request.post('/api/test-command', { headers, data: { user: 'Second Fighter', command: '!attack' } });
