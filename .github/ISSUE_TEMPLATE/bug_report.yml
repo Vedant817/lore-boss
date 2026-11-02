@@ -1,0 +1,26 @@
+name: Bug report
+description: Report a reproducible Lore Boss issue. Do not include secrets or private chat.
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include the revision, live/replay mode, commands and steps.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node version, browser and OBS version if relevant.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Redacted errors or screenshots. Never attach .env, tokens, databases or unconsented viewer data. Use private reporting for security issues.

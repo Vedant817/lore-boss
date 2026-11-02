@@ -1,7 +1,7 @@
 # AGENTS.md — rules for every coding agent (Codex, opencode subagents)
 Read fully before any change. Violations = reject the diff.
 
-1. **Scope:** do only the task card. No drive-by refactors. Touch only listed files unless the card allows more.
+1. **Scope:** follow the issue, PR description or written task; honor an explicit file allowlist when supplied. No unrelated refactors. A separate task-card system is not required.
 2. **No hallucinated APIs** → guardrails/NO_HALLUCINATION.md. Cite docs URLs for every external API call; if unsure, stop and report "UNVERIFIED".
 3. **No fake/hardcoded data** → guardrails/NO_FAKES.md. No sample usernames, quotes, HP numbers, or "demo" branches in `src/` product paths.
 4. **Replay is a labeled flag**, never a silent fallback.

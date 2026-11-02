@@ -5,7 +5,9 @@ data/
 tokens.json
 fixtures/replay/real-*
 dist
-.testsprite/runs/
+.testsprite/
+.opencode/
+opencode.json
 test-results/
 playwright-report/
 recordings/

@@ -1,8 +1,8 @@
-# Review checklist (reviewer subagent + Codex)
+# Review checklist
 Score each 0/1; any 0 in **bold** rows = FAIL.
 | Item |
 |---|
-| **Matches task card scope** |
+| **Matches the issue, PR or written task scope** |
 | **Tests exist and actually exercise behavior (not mocks of itself)** |
 | **Gates green (re-run them, don't trust the report)** |
 | **No hardcoded/fake data in src; replay gated by flag** |

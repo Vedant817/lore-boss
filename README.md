@@ -102,3 +102,7 @@ Replay is explicit and labeled. To record/replay your own consented session, use
 The live workflow has been exercised on a broadcaster's own Twitch channel. Multi-viewer enjoyment, real paid Bits, incoming raids and eligible-channel Predictions still need live validation. Automated/simulated coverage is not live acceptance. The [demo notes](submission/README.md) state the current video's limits.
 
 Repository layout: `src/` application; `tests/` automated checks and isolated playground; `fixtures/` required captured test inputs; `scripts/` guardrail check; `guardrails/` contribution constraints; `submission/` current demo, screenshots and project description. Historical reviews and task cards remain in Git history rather than the working tree.
+
+## Contribute
+
+Start with [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, scope and verification. Open an issue for a reproducible bug or a substantial proposal; focused pull requests are welcome. Report sensitive findings using [SECURITY.md](SECURITY.md). A license has not yet been selected by the project owner.
