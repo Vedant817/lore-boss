@@ -16,6 +16,17 @@ export interface EvidenceMessage { id: string; userName: string; text: string; t
 export interface FighterStats { userId: string; userName: string; damage: number; bossesBeaten: number; blocks: number; finalBlows: number; crits: number }
 export interface BossRecord { id: string; name: string; maxHp: number; spawnedAt: string; defeatedAt: string | null; finisher: string | null; topFighter: string | null; strikesBlocked: number; strikesLanded: number }
 export interface LoreBookEntry { id: string; kind: LoreItem['kind']; text: string; reviewedAt: string | null }
+// One combat transition and every row it implies. `claimEventId` is omitted for timer-driven
+// transitions, which have no delivered event to claim.
+export interface CombatWrites {
+  sessionId: string;
+  state: BossState;
+  claimEventId?: string | undefined;
+  viewer?: { userId: string; userName: string; ts: string } | undefined;
+  damage?: { eventId: string; userId: string; amount: number; crit: boolean; cause: 'attack' | 'cheer' | 'heal'; ts: string } | undefined;
+  block?: { eventId: string; userId: string; ts: string } | undefined;
+  finisherUserId?: string | undefined;
+}
 export interface HallOfFame { fighters: FighterStats[]; bosses: BossRecord[]; lore: LoreBookEntry[]; bossesDefeated: number }
 
 function count(value: unknown, column: string): number {
@@ -437,6 +448,28 @@ export class Store {
   setFinisher(bossId: string, userId: string): void {
     requireText(userId, 'finisher userId');
     this.db.prepare('UPDATE bosses SET finisher_user_id = COALESCE(finisher_user_id, ?) WHERE id = ?').run(userId, bossId);
+  }
+
+  // One combat event's durable claim, viewer, damage/block, boss and finisher writes land in a
+  // single synchronous transaction. better-sqlite3 rolls every statement back when any throws.
+  // docs: https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md
+  // Returns false when the event id was already claimed, writing and publishing nothing.
+  commitCombat(writes: CombatWrites): boolean {
+    const run = this.db.transaction(() => {
+      if (writes.claimEventId !== undefined && !this.claimEvent(writes.sessionId, writes.claimEventId)) return false;
+      if (writes.viewer) this.saveViewer(writes.viewer.userId, writes.viewer.userName, writes.viewer.ts);
+      const bossId = writes.state.bossId;
+      if (bossId === null) fail('combat state has no bossId');
+      if (writes.damage) {
+        const { eventId, userId, amount, crit, cause, ts } = writes.damage;
+        this.saveDamage(bossId, eventId, userId, amount, crit, cause, ts);
+      }
+      if (writes.block) this.saveBlock(bossId, writes.block.eventId, writes.block.userId, writes.block.ts);
+      this.saveBoss(writes.sessionId, writes.state);
+      if (writes.finisherUserId !== undefined) this.setFinisher(bossId, writes.finisherUserId);
+      return true;
+    });
+    return run();
   }
 
   // Cross-stream records for one source only, so replay never mixes into live history.

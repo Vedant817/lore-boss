@@ -26,6 +26,7 @@ export function blocksNeeded(activeChatters: number, stage: BossState['stage']):
 }
 type FightEvent = Extract<LBEvent, { kind: 'command' | 'cheer' }>;
 const UNREACHABLE = 'Could not reach Twitch';
+const PROCESSING_FAILED = 'Event processing failed; source stopped to preserve consistency';
 
 export class Runtime {
   readonly store: Store;
@@ -155,18 +156,21 @@ export class Runtime {
     if (this.disposed || !this.sessionId || event.source !== this.cfg.LB_SOURCE || event.channelId !== this.channelId || this.seen.has(event.id)) return;
     this.seen.add(event.id); if (this.seen.size > 10_000) this.seen.delete(this.seen.values().next().value!);
     try {
-      if (!this.store.claimEvent(this.sessionId, event.id)) return;
-      if (this.recordFd !== null) appendFileSync(this.recordFd, JSON.stringify({ ...event, t_ms: Date.now() - this.recordStart }) + '\n');
       if (event.kind === 'chat') {
+        if (!this.store.claimEvent(this.sessionId, event.id)) return;
+        this.record(event);
         if (!allowedText(event.text, this.lore.blocked)) return;
         if (!this.store.saveChat(this.sessionId, event)) return;
         this.chatters.set(event.userId, this.now());
         if (this.chatters.size > 10_000) this.chatters.delete(this.chatters.keys().next().value!);
         this.lore.add(event);
+        // The chat row above is stored independently; the derived command commits its own claim atomically.
         const command = commandFromChat(event); if (command) this.accept(command); return;
       }
-      if (event.kind === 'raid') { this.recap(event); return; }
+      if (event.kind === 'raid') { if (!this.store.claimEvent(this.sessionId, event.id)) return; this.record(event); this.recap(event); return; }
       if (event.kind === 'command' && event.command === '!lore') {
+        if (!this.store.claimEvent(this.sessionId, event.id)) return;
+        this.record(event);
         // Rotates through this session's approved lore so repeated !lore does not repeat one line.
         const approved = this.approved();
         if (approved.length && event.source === 'live' && this.canAct(event.userId + ':lore', 10_000)) {
@@ -176,33 +180,68 @@ export class Runtime {
         return;
       }
       if (event.kind === 'command' && event.command === '!stats') {
+        if (!this.store.claimEvent(this.sessionId, event.id)) return;
+        this.record(event);
         if (event.source === 'live' && this.canAct(event.userId + ':stats', 10_000)) this.reply(statsReply(event.userName, this.store.fighterStats(this.cfg.LB_SOURCE, event.userId)));
         return;
       }
-      if (this.boss.phase !== 'fight') return;
+      // Combat events claim durably inside apply's transaction, so an ignored one is claimed here.
+      if (this.boss.phase !== 'fight') { this.claimIgnored(event); return; }
       const at = this.now();
-      if (event.kind === 'command' && event.command === '!block') { if (this.canAct(event.userId + ':block', 1000)) this.apply({ type: 'block', user: event.userName, at }, event); return; }
-      if (event.kind === 'command' && this.canAct(event.userId, 1000)) this.apply({ type: event.command === '!attack' ? 'attack' : 'heal', user: event.userName, at }, event);
-      else if (event.kind === 'cheer') this.apply({ type: 'cheer', bits: event.bits, user: event.userName, at }, event);
-    } catch { this.error = 'Event processing failed; source stopped to preserve consistency'; this.stopSource(); }
+      if (event.kind === 'command' && event.command === '!block') {
+        this.commandAction({ type: 'block', user: event.userName, at }, event, event.userId + ':block'); return;
+      }
+      if (event.kind === 'command') {
+        this.commandAction({ type: event.command === '!attack' ? 'attack' : 'heal', user: event.userName, at }, event, event.userId); return;
+      }
+      if (event.kind === 'cheer') this.apply({ type: 'cheer', bits: event.bits, user: event.userName, at }, event);
+    } catch { this.fail(PROCESSING_FAILED); }
   }
-  // Runs one action through the pure reducer, persists what changed and announces it to the overlay.
-  private apply(action: BossAction, event?: FightEvent): void {
+  // A combat event that produced no transition is still durably processed, as it always was.
+  private claimIgnored(event: FightEvent): boolean {
+    if (!this.sessionId || !this.store.claimEvent(this.sessionId, event.id)) return false;
+    this.record(event); return true;
+  }
+  private commandAction(action: BossAction, event: FightEvent, cooldownKey: string): void {
+    const previous = this.cooldown.get(cooldownKey);
+    if (!this.canAct(cooldownKey, 1_000)) { this.claimIgnored(event); return; }
+    // Duplicate durable claims must leave the player's prior cooldown intact. A claimed no-op
+    // still consumes it as before; a thrown write failure stops the source without retrying.
+    if (!this.apply(action, event)) {
+      if (previous === undefined) this.cooldown.delete(cooldownKey);
+      else this.cooldown.set(cooldownKey, previous);
+    }
+  }
+  private record(event: LBEvent): void {
+    if (this.recordFd !== null) appendFileSync(this.recordFd, JSON.stringify({ ...event, t_ms: Date.now() - this.recordStart }) + '\n');
+  }
+  private fail(message: string): void { this.error = message; this.stopSource(); }
+  // Runs one action through the pure reducer, commits every implied row in one transaction and
+  // only then assigns the reduced state and announces it to the overlay.
+  private apply(action: BossAction, event?: FightEvent): boolean {
     const before = this.boss;
     let next = reduce(before, action);
-    if (next === before || !this.sessionId) return;
+    if (next === before) return event ? this.claimIgnored(event) : false;
+    if (!this.sessionId) return false;
     if (next.phase === 'defeated') next = { ...next, durationMs: Math.max(0, this.now() - Date.parse(next.startedAt!)) };
-    const bossId = next.bossId!; const now = this.now();
+    const now = this.now();
     const userId = event?.userId ?? null;
-    if (event && userId && event.userName) this.store.saveViewer(userId, event.userName, event.ts);
-    const hit = action.type === 'attack' || action.type === 'heal' || action.type === 'cheer';
+    const cause = action.type === 'attack' || action.type === 'heal' || action.type === 'cheer' ? action.type : null;
     const amount = Math.abs(before.hp - next.hp);
-    if (hit && event && userId) this.store.saveDamage(bossId, event.id, userId, amount, action.type === 'cheer', action.type, event.ts);
-    if (action.type === 'block' && event && userId) this.store.saveBlock(bossId, event.id, userId, event.ts);
-    this.boss = next; this.store.saveBoss(this.sessionId, next); this.publishState();
-    if (hit) {
-      const stunned = action.type !== 'heal' && before.stunnedUntil !== null && now < before.stunnedUntil;
-      this.send('boss.hit', { userName: event?.userName ?? '', amount, crit: action.type === 'cheer', cause: action.type, combo: action.type === 'attack' ? next.lastCombo : 0, stunned });
+    const committed = this.store.commitCombat({
+      sessionId: this.sessionId,
+      claimEventId: event?.id,
+      state: next,
+      viewer: event && userId && event.userName ? { userId, userName: event.userName, ts: event.ts } : undefined,
+      damage: cause !== null && event && userId ? { eventId: event.id, userId, amount, crit: cause === 'cheer', cause, ts: event.ts } : undefined,
+      block: action.type === 'block' && event && userId ? { eventId: event.id, userId, ts: event.ts } : undefined,
+      finisherUserId: next.phase === 'defeated' && userId && next.finisher ? userId : undefined,
+    });
+    if (!committed) return false;
+    this.boss = next; this.publishState();
+    if (cause !== null) {
+      const stunned = cause !== 'heal' && before.stunnedUntil !== null && now < before.stunnedUntil;
+      this.send('boss.hit', { userName: event?.userName ?? '', amount, crit: cause === 'cheer', cause, combo: cause === 'attack' ? next.lastCombo : 0, stunned });
     }
     if (next.stage !== before.stage) this.send('boss.stage', { stage: next.stage });
     if (!before.strike && next.strike) this.send('boss.strike', { id: next.strike.id, endsAt: next.strike.endsAt, needed: next.strike.needed, serverNow: now });
@@ -213,12 +252,15 @@ export class Runtime {
       this.nextStrikeAt = now + STRIKE_EVERY_MS[next.stage];
     }
     if (next.phase === 'defeated') {
-      if (userId && next.finisher) this.store.setFinisher(bossId, userId);
       this.nextStrikeAt = null;
       this.send('boss.defeated', { name: next.name, durationMs: next.durationMs, mvps: mvps(next), finisher: next.finisher, strikesBlocked: next.strikesBlocked, strikesLanded: next.strikesLanded });
       this.settlePrediction(this.prediction && now >= this.prediction.deadline ? 'boss' : 'chat');
       this.publishHall();
     }
+    // Recording is an external file write, deliberately outside the DB transaction and after the
+    // committed state and its effects; a file failure stops the source but cannot roll rows back.
+    if (event) this.record(event);
+    return true;
   }
   // Game clock (1 s): lands an unblocked strike at its deadline, starts the next one, closes an expired prediction.
   tick(): void {
@@ -226,13 +268,19 @@ export class Runtime {
     const now = this.now();
     if (this.boss.phase === 'fight') {
       const strike = this.boss.strike;
-      if (strike && now >= strike.endsAt) this.apply({ type: 'strikeLand', id: strike.id, at: now });
+      if (strike && now >= strike.endsAt) this.transition({ type: 'strikeLand', id: strike.id, at: now });
       else if (!strike && this.nextStrikeAt !== null && now >= this.nextStrikeAt) {
-        this.nextStrikeAt = null;
-        this.apply({ type: 'strike', id: randomUUID(), at: now, needed: blocksNeeded(this.activeChatters(now), this.boss.stage) });
+        const needed = blocksNeeded(this.activeChatters(now), this.boss.stage);
+        if (this.transition({ type: 'strike', id: randomUUID(), at: now, needed })) this.nextStrikeAt = null;
       }
     }
     if (this.prediction && now >= this.prediction.deadline) this.settlePrediction('boss');
+  }
+  // Timer transitions fail the same way accepted events do: nothing is assigned or published, and
+  // the source stops rather than retrying an unpersisted transition.
+  private transition(action: BossAction): boolean {
+    try { return this.apply(action); }
+    catch { this.fail(PROCESSING_FAILED); return false; }
   }
   private activeChatters(now: number): number {
     let active = 0; for (const seen of this.chatters.values()) if (seen >= now - ACTIVE_CHATTER_MS) active++;
@@ -252,10 +300,13 @@ export class Runtime {
     if (!this.sessionId) throw new Error('Start a live or explicitly selected replay session first');
     const next = reduce(this.boss, { type: 'spawn', id: randomUUID(), maxHp, lore: this.approved(), ts: new Date(this.now()).toISOString() });
     if (next === this.boss) throw new Error('Approve lore first and finish any current fight');
-    this.boss = reduce(next, { type: 'start' });
-    this.boss = { ...this.boss, attackPool: this.attributed(this.boss.attackPool) };
+    const started = reduce(next, { type: 'start' });
+    const spawned = { ...started, attackPool: this.attributed(started.attackPool) };
+    // Persist before assigning so a failed spawn leaves the previous idle state and no announcement.
+    this.store.saveBoss(this.sessionId, spawned);
+    this.boss = spawned;
     this.nextStrikeAt = this.now() + FIRST_STRIKE_MS;
-    this.store.saveBoss(this.sessionId, this.boss); this.publishState(); this.attack();
+    this.publishState(); this.attack();
     void this.openPrediction(this.boss.bossId!);
     return this.boss;
   }
